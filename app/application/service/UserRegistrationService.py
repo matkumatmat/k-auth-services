@@ -1,0 +1,210 @@
+from uuid import UUID
+
+from app.application.port.input.IRegisterUser import IRegisterUser
+from app.application.port.output.IAuthProviderRepository import IAuthProviderRepository
+from app.application.port.output.IOtpCodeRepository import IOtpCodeRepository
+from app.application.port.output.ITransactionLogger import ITransactionLogger
+from app.application.port.output.IUserRepository import IUserRepository
+from app.domain.AuthProvider import AuthProvider
+from app.domain.DatabaseTransactionLog import DatabaseTransactionLog
+from app.domain.User import User
+from app.domain.ValueObjects import AuthProviderType, DatabaseOperation, OtpPurpose
+from app.shared.Cryptography import Salter
+from app.shared.DateTime import DateTimeProtocol
+from app.shared.Exceptions import InvalidCredentialsException, UserAlreadyExistsException, UserNotFoundException
+from app.shared.UuidGenerator import UuidGeneratorProtocol
+
+
+class UserRegistrationService(IRegisterUser):
+    def __init__(
+        self,
+        user_repository: IUserRepository,
+        auth_provider_repository: IAuthProviderRepository,
+        otp_repository: IOtpCodeRepository,
+        transaction_logger: ITransactionLogger,
+        salter: Salter,
+        uuid_generator: UuidGeneratorProtocol,
+        datetime_converter: DateTimeProtocol,
+    ):
+        self.user_repository = user_repository
+        self.auth_provider_repository = auth_provider_repository
+        self.otp_repository = otp_repository
+        self.transaction_logger = transaction_logger
+        self.salter = salter
+        self.uuid_generator = uuid_generator
+        self.datetime_converter = datetime_converter
+
+    async def execute_with_email(self, email: str, password: str) -> User:
+        existing_user = await self.user_repository.find_by_email(email)
+        if existing_user:
+            raise UserAlreadyExistsException(details={"email": email})
+
+        current_time = self.datetime_converter.now_utc()
+        password_hash = self.salter.hash_password(password)
+
+        user = User(
+            id=self.uuid_generator.generate(),
+            email=email,
+            phone=None,
+            password_hash=password_hash,
+            is_active=True,
+            is_verified=False,
+            created_at=current_time,
+            updated_at=current_time,
+            deleted_at=None
+        )
+
+        saved_user = await self.user_repository.save(user)
+
+        await self.transaction_logger.log_database_transaction(
+            DatabaseTransactionLog(
+                id=self.uuid_generator.generate(),
+                table_name="users",
+                operation=DatabaseOperation.INSERT,
+                record_id=saved_user.id,
+                user_id=saved_user.id,
+                old_values={},
+                new_values={"email": email, "is_verified": False},
+                timestamp=current_time
+            )
+        )
+
+        auth_provider = AuthProvider(
+            id=self.uuid_generator.generate(),
+            user_id=saved_user.id,
+            provider_type=AuthProviderType.EMAIL,
+            provider_user_id=email,
+            is_primary=True,
+            provider_metadata={},
+            created_at=current_time
+        )
+
+        await self.auth_provider_repository.save(auth_provider)
+
+        return saved_user
+
+    async def execute_with_phone(self, phone: str) -> User:
+        existing_user = await self.user_repository.find_by_phone(phone)
+        if existing_user:
+            raise UserAlreadyExistsException(details={"phone": phone})
+
+        current_time = self.datetime_converter.now_utc()
+
+        user = User(
+            id=self.uuid_generator.generate(),
+            email=None,
+            phone=phone,
+            password_hash=None,
+            is_active=True,
+            is_verified=False,
+            created_at=current_time,
+            updated_at=current_time,
+            deleted_at=None
+        )
+
+        saved_user = await self.user_repository.save(user)
+
+        await self.transaction_logger.log_database_transaction(
+            DatabaseTransactionLog(
+                id=self.uuid_generator.generate(),
+                table_name="users",
+                operation=DatabaseOperation.INSERT,
+                record_id=saved_user.id,
+                user_id=saved_user.id,
+                old_values={},
+                new_values={"phone": phone, "is_verified": False},
+                timestamp=current_time
+            )
+        )
+
+        auth_provider = AuthProvider(
+            id=self.uuid_generator.generate(),
+            user_id=saved_user.id,
+            provider_type=AuthProviderType.WHATSAPP,
+            provider_user_id=phone,
+            is_primary=True,
+            provider_metadata={},
+            created_at=current_time
+        )
+
+        await self.auth_provider_repository.save(auth_provider)
+
+        return saved_user
+
+    async def verify_email(self, user_id: UUID, otp_code: str) -> bool:
+        user = await self.user_repository.find_by_id(user_id)
+        if not user:
+            raise UserNotFoundException(details={"user_id": str(user_id)})
+
+        if not user.has_email():
+            raise InvalidCredentialsException(message="User does not have an email address")
+
+        current_time = self.datetime_converter.now_utc()
+        otp = await self.otp_repository.find_valid_by_target(user.email, OtpPurpose.REGISTRATION)
+
+        if not otp or not otp.is_valid(current_time):
+            raise InvalidCredentialsException(message="Invalid or expired OTP code")
+
+        is_valid = self.salter.verify_password(otp_code, otp.code_hash)
+        if not is_valid:
+            raise InvalidCredentialsException(message="Invalid OTP code")
+
+        await self.otp_repository.mark_used(otp.id)
+
+        user.is_verified = True
+        user.updated_at = current_time
+        await self.user_repository.update(user)
+
+        await self.transaction_logger.log_database_transaction(
+            DatabaseTransactionLog(
+                id=self.uuid_generator.generate(),
+                table_name="users",
+                operation=DatabaseOperation.UPDATE,
+                record_id=user.id,
+                user_id=user.id,
+                old_values={"is_verified": False},
+                new_values={"is_verified": True},
+                timestamp=current_time
+            )
+        )
+
+        return True
+
+    async def verify_phone(self, user_id: UUID, otp_code: str) -> bool:
+        user = await self.user_repository.find_by_id(user_id)
+        if not user:
+            raise UserNotFoundException(details={"user_id": str(user_id)})
+
+        if not user.has_phone():
+            raise InvalidCredentialsException(message="User does not have a phone number")
+
+        current_time = self.datetime_converter.now_utc()
+        otp = await self.otp_repository.find_valid_by_target(user.phone, OtpPurpose.REGISTRATION)
+
+        if not otp or not otp.is_valid(current_time):
+            raise InvalidCredentialsException(message="Invalid or expired OTP code")
+
+        is_valid = self.salter.verify_password(otp_code, otp.code_hash)
+        if not is_valid:
+            raise InvalidCredentialsException(message="Invalid OTP code")
+
+        await self.otp_repository.mark_used(otp.id)
+
+        user.is_verified = True
+        user.updated_at = current_time
+        await self.user_repository.update(user)
+
+        await self.transaction_logger.log_database_transaction(
+            DatabaseTransactionLog(
+                id=self.uuid_generator.generate(),
+                table_name="users",
+                operation=DatabaseOperation.UPDATE,
+                record_id=user.id,
+                user_id=user.id,
+                old_values={"is_verified": False},
+                new_values={"is_verified": True},
+                timestamp=current_time
+            )
+        )
+
+        return True
