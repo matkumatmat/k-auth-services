@@ -125,6 +125,7 @@ async def get_refresh_token_service(
 ) -> RefreshTokenService:
     return RefreshTokenService(
         session_repository=SessionRepository(db_session),
+        transaction_logger=TransactionLoggerRepository(db_session),
         salter=salter,
         token_generator=token_generator,
         uuid_generator=uuid_generator,
@@ -136,5 +137,8 @@ async def get_revoke_session_service(
     db_session: AsyncSession = Depends(get_db_session),
 ) -> RevokeSessionService:
     return RevokeSessionService(
-        session_repository=SessionRepository(db_session)
+        session_repository=SessionRepository(db_session),
+        transaction_logger=TransactionLoggerRepository(db_session),
+        datetime_converter=datetime_converter,
+        uuid_generator=uuid_generator
     )

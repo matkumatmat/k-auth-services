@@ -35,8 +35,8 @@ class RevokeSessionService(IRevokeSession):
                     action=UserBehaviorAction.LOGOUT,
                     ip_address=session.ip_address,
                     user_agent=session.device_info,
-                    metadata={"session_id": str(session_id)},
-                    timestamp=self.datetime_converter.now_utc()
+                    additional_metadata={"session_id": str(session_id)},
+                    created_at=self.datetime_converter.now_utc()
                 )
             )
 
@@ -50,7 +50,7 @@ class RevokeSessionService(IRevokeSession):
                 action=UserBehaviorAction.LOGOUT,
                 ip_address="unknown",
                 user_agent="logout_all_sessions",
-                metadata={"action": "logout_all"},
-                timestamp=self.datetime_converter.now_utc()
+                additional_metadata={"action": "logout_all"},
+                created_at=self.datetime_converter.now_utc()
             )
         )

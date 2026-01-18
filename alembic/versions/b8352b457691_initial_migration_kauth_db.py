@@ -33,7 +33,7 @@ def upgrade() -> None:
     )
     op.create_table('plans',
     sa.Column('name', sa.String(length=100), nullable=False),
-    sa.Column('billing_cycle', sa.Enum('MONTHLY', 'YEARLY', 'LIFETIME', name='billingcycle'), nullable=False),
+    sa.Column('billing_cycle', sa.Enum('MONTHLY', 'YEARLY', 'LIFETIME','CUSTOM', name='billingcycle'), nullable=False),
     sa.Column('features', sa.JSON(), server_default=sa.text("'[]'"), nullable=False),
     sa.Column('rate_limits', sa.JSON(), server_default=sa.text("'{}'"), nullable=False),
     sa.Column('quota_limits', sa.JSON(), server_default=sa.text("'{}'"), nullable=False),
