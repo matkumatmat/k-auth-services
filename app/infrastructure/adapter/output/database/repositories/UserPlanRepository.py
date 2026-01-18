@@ -8,6 +8,7 @@ from app.application.port.output.IUserPlanRepository import IUserPlanRepository
 from app.domain.UserPlan import UserPlan
 from app.infrastructure.adapter.output.database.mappers.UserPlanMapper import UserPlanMapper
 from app.infrastructure.config.database.persistence.UserPlanModel import UserPlanModel
+from app.domain.ValueObjects import UserPlanStatus
 
 
 class UserPlanRepository(IUserPlanRepository):
@@ -24,7 +25,7 @@ class UserPlanRepository(IUserPlanRepository):
         current_time = datetime.utcnow()
         stmt = select(UserPlanModel).where(
             UserPlanModel.user_id == user_id,
-            UserPlanModel.is_active == True,
+            UserPlanModel.status == UserPlanStatus.ACTIVE,
             (UserPlanModel.expires_at.is_(None) | (UserPlanModel.expires_at > current_time))
         ).order_by(UserPlanModel.started_at.desc())
 
@@ -41,7 +42,7 @@ class UserPlanRepository(IUserPlanRepository):
 
     async def update(self, user_plan: UserPlan) -> UserPlan:
         user_plan_model = UserPlanMapper.to_persistence(user_plan)
-        await self._session.merge(user_plan_model)
+        merged_model = await self._session.merge(user_plan_model)
         await self._session.flush()
-        await self._session.refresh(user_plan_model)
-        return UserPlanMapper.to_domain(user_plan_model)
+        await self._session.refresh(merged_model)
+        return UserPlanMapper.to_domain(merged_model)

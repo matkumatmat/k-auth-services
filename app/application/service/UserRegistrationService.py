@@ -16,7 +16,8 @@ from app.domain.DatabaseTransactionLog import DatabaseTransactionLog
 from app.domain.ServiceAccess import ServiceAccess
 from app.domain.User import User
 from app.domain.UserPlan import UserPlan
-from app.domain.ValueObjects import AuthProviderType, BillingCycle, DatabaseOperation, OtpPurpose, OtpDeliveryMethod
+# FIX: Tambahkan UserPlanStatus di import
+from app.domain.ValueObjects import AuthProviderType, BillingCycle, DatabaseOperation, OtpPurpose, OtpDeliveryMethod, UserPlanStatus
 from app.shared.Cryptography import Salter
 from app.shared.DateTime import DateTimeProtocol
 from app.shared.Exceptions import InvalidCredentialsException, UserAlreadyExistsException, UserNotFoundException
@@ -57,8 +58,11 @@ class UserRegistrationService(IRegisterUser):
 
         current_time = self.datetime_converter.now_utc()
         password_hash = self.salter.hash_password(password)
+        
+        # OTP Setup
         otp_duration = timedelta(minutes=20) 
         otp_expires_at = self.datetime_converter.add_timedelta(current_time, otp_duration)
+        
         user = User(
             id=self.uuid_generator.generate(),
             email=email,
@@ -73,8 +77,10 @@ class UserRegistrationService(IRegisterUser):
 
         saved_user = await self.user_repository.save(user)
 
+        # Generate & Save OTP
         raw_otp_code = ''.join(secrets.choice(string.digits) for _ in range(6))
         print(f"\n[DEBUG] OTP for {email}: {raw_otp_code}\n")
+        
         otp_hash = self.salter.hash_password(raw_otp_code)
         otp_code = OtpCode(
             id=self.uuid_generator.generate(),
@@ -177,13 +183,17 @@ class UserRegistrationService(IRegisterUser):
         if not free_plan:
             return
 
+        # FIX: Inisialisasi UserPlan disesuaikan dengan Domain (pake status, bukan is_active)
         user_plan = UserPlan(
             id=self.uuid_generator.generate(),
             user_id=user_id,
             plan_id=free_plan.id,
+            status=UserPlanStatus.ACTIVE,  # Ganti is_active=True jadi ini
             started_at=current_time,
             expires_at=None,
-            is_active=True,
+            auto_renew=False,             # Field baru wajib diisi
+            payment_gateway=None,         # Field baru wajib diisi
+            payment_gateway_subscription_id=None, # Field baru wajib diisi
             created_at=current_time,
             updated_at=current_time
         )

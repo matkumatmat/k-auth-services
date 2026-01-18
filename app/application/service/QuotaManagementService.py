@@ -89,9 +89,10 @@ class QuotaManagementService(ICheckQuota):
                 operation=DatabaseOperation.UPDATE,
                 record_id=quota.id,
                 user_id=user_id,
-                old_values={"current_usage": quota.current_usage},
-                new_values={"current_usage": quota.current_usage + amount},
-                timestamp=self.datetime_converter.now_utc()
+                old_value={"current_usage": quota.current_usage},
+                new_value={"current_usage": quota.current_usage + amount},
+                created_at=self.datetime_converter.now_utc(),
+                transaction_id=self.uuid_generator.generate()
             )
         )
 
@@ -142,13 +143,14 @@ class QuotaManagementService(ICheckQuota):
                 operation=DatabaseOperation.INSERT,
                 record_id=saved_quota.id,
                 user_id=user_id,
-                old_values={},
-                new_values={
+                old_value={},
+                new_value={
                     "service_name": service_name,
                     "quota_type": quota_type,
                     "limit": default_limit
                 },
-                timestamp=current_time
+                created_at=current_time,
+                transaction_id=self.uuid_generator.generate()
             )
         )
 
