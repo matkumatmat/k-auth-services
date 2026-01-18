@@ -44,10 +44,10 @@ class UserRepository(IUserRepository):
 
     async def update(self, user: User) -> User:
         user_model = self._mapper.to_persistence(user)
-        await self._session.merge(user_model)
+        merged_user_model = await self._session.merge(user_model)
         await self._session.flush()
-        await self._session.refresh(user_model)
-        return self._mapper.to_domain(user_model)
+        await self._session.refresh(merged_user_model)
+        return self._mapper.to_domain(merged_user_model)
 
     async def delete(self, user_id: UUID) -> None:
         stmt = (

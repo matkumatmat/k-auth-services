@@ -1,5 +1,5 @@
 from app.domain.OtpCode import OtpCode
-from app.domain.ValueObjects import OtpPurpose
+from app.domain.ValueObjects import OtpPurpose, OtpDeliveryMethod
 from app.infrastructure.config.database.persistence.OtpCodeModel import OtpCodeModel
 
 
@@ -8,10 +8,12 @@ class OtpCodeMapper:
     def to_domain(model: OtpCodeModel) -> OtpCode:
         return OtpCode(
             id=model.id,
-            target=model.target,
+            user_id=model.user_id,
+            delivery_method=OtpDeliveryMethod(model.delivery_method), # Ditambahkan & Casting Enum
+            delivery_target=model.delivery_target, # Ganti 'target' jadi 'delivery_target'
             code_hash=model.code_hash,
             purpose=OtpPurpose(model.purpose),
-            is_used=model.is_used,
+            used_at=model.used_at,
             expires_at=model.expires_at,
             created_at=model.created_at
         )
@@ -20,10 +22,12 @@ class OtpCodeMapper:
     def to_persistence(domain: OtpCode) -> OtpCodeModel:
         return OtpCodeModel(
             id=domain.id,
-            target=domain.target,
+            user_id=domain.user_id,
             code_hash=domain.code_hash,
-            purpose=domain.purpose.value,
-            is_used=domain.is_used,
+            delivery_method=domain.delivery_method,
+            delivery_target=domain.delivery_target,
+            purpose=domain.purpose,
             expires_at=domain.expires_at,
+            used_at=domain.used_at,
             created_at=domain.created_at
         )

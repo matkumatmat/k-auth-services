@@ -1,5 +1,7 @@
 from uuid import UUID
-
+import secrets
+import string
+from datetime import datetime, timedelta
 from app.application.port.input.IRegisterUser import IRegisterUser
 from app.application.port.output.IAuthProviderRepository import IAuthProviderRepository
 from app.application.port.output.IOtpCodeRepository import IOtpCodeRepository
@@ -14,12 +16,12 @@ from app.domain.DatabaseTransactionLog import DatabaseTransactionLog
 from app.domain.ServiceAccess import ServiceAccess
 from app.domain.User import User
 from app.domain.UserPlan import UserPlan
-from app.domain.ValueObjects import AuthProviderType, BillingCycle, DatabaseOperation, OtpPurpose
+from app.domain.ValueObjects import AuthProviderType, BillingCycle, DatabaseOperation, OtpPurpose, OtpDeliveryMethod
 from app.shared.Cryptography import Salter
 from app.shared.DateTime import DateTimeProtocol
 from app.shared.Exceptions import InvalidCredentialsException, UserAlreadyExistsException, UserNotFoundException
 from app.shared.UuidGenerator import UuidGeneratorProtocol
-
+from app.domain.OtpCode import OtpCode
 
 class UserRegistrationService(IRegisterUser):
     def __init__(
@@ -55,7 +57,8 @@ class UserRegistrationService(IRegisterUser):
 
         current_time = self.datetime_converter.now_utc()
         password_hash = self.salter.hash_password(password)
-
+        otp_duration = timedelta(minutes=20) 
+        otp_expires_at = self.datetime_converter.add_timedelta(current_time, otp_duration)
         user = User(
             id=self.uuid_generator.generate(),
             email=email,
@@ -69,6 +72,23 @@ class UserRegistrationService(IRegisterUser):
         )
 
         saved_user = await self.user_repository.save(user)
+
+        raw_otp_code = ''.join(secrets.choice(string.digits) for _ in range(6))
+        print(f"\n[DEBUG] OTP for {email}: {raw_otp_code}\n")
+        otp_hash = self.salter.hash_password(raw_otp_code)
+        otp_code = OtpCode(
+            id=self.uuid_generator.generate(),
+            user_id=saved_user.id,
+            code_hash=otp_hash,
+            delivery_method=OtpDeliveryMethod.EMAIL,
+            delivery_target=email,
+            purpose=OtpPurpose.REGISTRATION,
+            expires_at=otp_expires_at,
+            used_at=None,
+            created_at=current_time
+        )
+
+        await self.otp_repository.save(otp_code)
 
         await self.transaction_logger.log_database_transaction(
             DatabaseTransactionLog(

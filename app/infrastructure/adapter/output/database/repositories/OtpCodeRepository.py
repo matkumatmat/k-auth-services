@@ -1,6 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
+from anyio import current_time
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,7 +10,7 @@ from app.domain.OtpCode import OtpCode
 from app.domain.ValueObjects import OtpPurpose
 from app.infrastructure.adapter.output.database.mappers.OtpCodeMapper import OtpCodeMapper
 from app.infrastructure.config.database.persistence.OtpCodeModel import OtpCodeModel
-
+from app.shared.DateTime import DateTimeConverter
 
 class OtpCodeRepository(IOtpCodeRepository):
     def __init__(self, session: AsyncSession):
@@ -24,11 +25,11 @@ class OtpCodeRepository(IOtpCodeRepository):
     async def find_valid_by_target(
         self, target: str, purpose: OtpPurpose
     ) -> OtpCode | None:
-        current_time = datetime.utcnow()
+        current_time = DateTimeConverter().now_utc()
         stmt = select(OtpCodeModel).where(
-            OtpCodeModel.target == target,
+            OtpCodeModel.delivery_target == target,
             OtpCodeModel.purpose == purpose.value,
-            OtpCodeModel.is_used == False,
+            OtpCodeModel.used_at.is_(None),
             OtpCodeModel.expires_at > current_time
         ).order_by(OtpCodeModel.created_at.desc())
 
@@ -44,10 +45,11 @@ class OtpCodeRepository(IOtpCodeRepository):
         return OtpCodeMapper.to_domain(otp_model)
 
     async def mark_used(self, otp_id: UUID) -> None:
+        current_time = DateTimeConverter().now_utc()
         stmt = (
             update(OtpCodeModel)
             .where(OtpCodeModel.id == otp_id)
-            .values(is_used=True)
+            .values(used_at=current_time)
         )
         await self._session.execute(stmt)
         await self._session.flush()
