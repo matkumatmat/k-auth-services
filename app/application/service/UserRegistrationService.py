@@ -3,12 +3,18 @@ from uuid import UUID
 from app.application.port.input.IRegisterUser import IRegisterUser
 from app.application.port.output.IAuthProviderRepository import IAuthProviderRepository
 from app.application.port.output.IOtpCodeRepository import IOtpCodeRepository
+from app.application.port.output.IPlanRepository import IPlanRepository
+from app.application.port.output.IServiceAccessRepository import IServiceAccessRepository
+from app.application.port.output.IServiceRepository import IServiceRepository
 from app.application.port.output.ITransactionLogger import ITransactionLogger
+from app.application.port.output.IUserPlanRepository import IUserPlanRepository
 from app.application.port.output.IUserRepository import IUserRepository
 from app.domain.AuthProvider import AuthProvider
 from app.domain.DatabaseTransactionLog import DatabaseTransactionLog
+from app.domain.ServiceAccess import ServiceAccess
 from app.domain.User import User
-from app.domain.ValueObjects import AuthProviderType, DatabaseOperation, OtpPurpose
+from app.domain.UserPlan import UserPlan
+from app.domain.ValueObjects import AuthProviderType, BillingCycle, DatabaseOperation, OtpPurpose
 from app.shared.Cryptography import Salter
 from app.shared.DateTime import DateTimeProtocol
 from app.shared.Exceptions import InvalidCredentialsException, UserAlreadyExistsException, UserNotFoundException
@@ -21,6 +27,10 @@ class UserRegistrationService(IRegisterUser):
         user_repository: IUserRepository,
         auth_provider_repository: IAuthProviderRepository,
         otp_repository: IOtpCodeRepository,
+        plan_repository: IPlanRepository,
+        user_plan_repository: IUserPlanRepository,
+        service_repository: IServiceRepository,
+        service_access_repository: IServiceAccessRepository,
         transaction_logger: ITransactionLogger,
         salter: Salter,
         uuid_generator: UuidGeneratorProtocol,
@@ -29,6 +39,10 @@ class UserRegistrationService(IRegisterUser):
         self.user_repository = user_repository
         self.auth_provider_repository = auth_provider_repository
         self.otp_repository = otp_repository
+        self.plan_repository = plan_repository
+        self.user_plan_repository = user_plan_repository
+        self.service_repository = service_repository
+        self.service_access_repository = service_access_repository
         self.transaction_logger = transaction_logger
         self.salter = salter
         self.uuid_generator = uuid_generator
@@ -81,6 +95,8 @@ class UserRegistrationService(IRegisterUser):
 
         await self.auth_provider_repository.save(auth_provider)
 
+        await self._auto_assign_plan_and_services(saved_user.id, current_time)
+
         return saved_user
 
     async def execute_with_phone(self, phone: str) -> User:
@@ -129,7 +145,87 @@ class UserRegistrationService(IRegisterUser):
 
         await self.auth_provider_repository.save(auth_provider)
 
+        await self._auto_assign_plan_and_services(saved_user.id, current_time)
+
         return saved_user
+
+    async def _auto_assign_plan_and_services(self, user_id: UUID, current_time) -> None:
+        free_plan = await self.plan_repository.find_by_name("Free")
+
+        if not free_plan:
+            return
+
+        user_plan = UserPlan(
+            id=self.uuid_generator.generate(),
+            user_id=user_id,
+            plan_id=free_plan.id,
+            started_at=current_time,
+            expires_at=None,
+            is_active=True,
+            created_at=current_time,
+            updated_at=current_time
+        )
+
+        await self.user_plan_repository.save(user_plan)
+
+        await self.transaction_logger.log_database_transaction(
+            DatabaseTransactionLog(
+                id=self.uuid_generator.generate(),
+                table_name="user_plans",
+                operation=DatabaseOperation.INSERT,
+                record_id=user_plan.id,
+                user_id=user_id,
+                old_values={},
+                new_values={"plan_id": str(free_plan.id), "plan_name": free_plan.name},
+                timestamp=current_time
+            )
+        )
+
+        default_services = await self._get_default_services_for_plan(free_plan.name)
+
+        for service in default_services:
+            service_access = ServiceAccess(
+                id=self.uuid_generator.generate(),
+                user_id=user_id,
+                service_name=service.name,
+                is_allowed=True,
+                allowed_features=None,
+                granted_at=current_time,
+                revoked_at=None,
+                created_at=current_time,
+                updated_at=current_time
+            )
+
+            await self.service_access_repository.save(service_access)
+
+            await self.transaction_logger.log_database_transaction(
+                DatabaseTransactionLog(
+                    id=self.uuid_generator.generate(),
+                    table_name="service_access",
+                    operation=DatabaseOperation.INSERT,
+                    record_id=service_access.id,
+                    user_id=user_id,
+                    old_values={},
+                    new_values={"service_name": service.name},
+                    timestamp=current_time
+                )
+            )
+
+    async def _get_default_services_for_plan(self, plan_name: str) -> list:
+        all_services = await self.service_repository.find_all_active()
+
+        if plan_name == "Anonym":
+            return []
+        elif plan_name == "Free":
+            default_service_names = ["cvmaker", "jobportal"]
+            return [s for s in all_services if s.name in default_service_names]
+        elif plan_name == "Pro":
+            default_service_names = ["cvmaker", "jobportal", "3dbinpacking", "media_information"]
+            return [s for s in all_services if s.name in default_service_names]
+        elif plan_name == "Enterprise":
+            return all_services
+        else:
+            return []
 
     async def verify_email(self, user_id: UUID, otp_code: str) -> bool:
         user = await self.user_repository.find_by_id(user_id)

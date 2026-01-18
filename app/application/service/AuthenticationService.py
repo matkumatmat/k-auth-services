@@ -205,13 +205,23 @@ class AuthenticationService(IAuthenticateUser):
     async def _create_session(self, user_id: UUID, device_info: str, ip_address: str) -> AuthenticationResult:
         current_time = self.datetime_converter.now_utc()
 
-        access_token_payload = {"user_id": str(user_id), "type": "access"}
+        session_id = self.uuid_generator.generate()
+
+        access_token_payload = {
+            "user_id": str(user_id),
+            "session_id": str(session_id),
+            "type": "access"
+        }
         access_token = self.token_generator.generate(
             access_token_payload,
             expires_delta=timedelta(hours=1)
         )
 
-        refresh_token_payload = {"user_id": str(user_id), "type": "refresh"}
+        refresh_token_payload = {
+            "user_id": str(user_id),
+            "session_id": str(session_id),
+            "type": "refresh"
+        }
         refresh_token = self.token_generator.generate(
             refresh_token_payload,
             expires_delta=timedelta(days=7)
@@ -219,7 +229,7 @@ class AuthenticationService(IAuthenticateUser):
         refresh_token_hash = self.salter.hash_password(refresh_token)
 
         session = Session(
-            id=self.uuid_generator.generate(),
+            id=session_id,
             user_id=user_id,
             refresh_token_hash=refresh_token_hash,
             device_info=device_info,

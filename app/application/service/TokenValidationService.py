@@ -34,37 +34,46 @@ class TokenValidationService(IValidateToken):
             )
 
         user_id_str = payload.get("user_id")
+        session_id_str = payload.get("session_id")
+
         if not user_id_str:
             return TokenValidationResult(
                 is_valid=False,
                 error_message="Token payload missing user_id"
             )
 
+        if not session_id_str:
+            return TokenValidationResult(
+                is_valid=False,
+                error_message="Token payload missing session_id"
+            )
+
         try:
             user_id = UUID(user_id_str)
+            session_id = UUID(session_id_str)
         except (ValueError, TypeError):
             return TokenValidationResult(
                 is_valid=False,
-                error_message="Invalid user_id format in token"
+                error_message="Invalid user_id or session_id format in token"
             )
 
-        sessions = await self.session_repository.find_active_by_user(user_id)
+        session = await self.session_repository.find_by_id(session_id)
 
-        if not sessions:
+        if not session:
             return TokenValidationResult(
                 is_valid=False,
-                error_message="No active session found for user"
+                error_message="Session not found"
+            )
+
+        if session.user_id != user_id:
+            return TokenValidationResult(
+                is_valid=False,
+                error_message="Session does not belong to user"
             )
 
         current_time = self.datetime_converter.now_utc()
-        active_session = None
 
-        for session in sessions:
-            if session.is_active(current_time):
-                active_session = session
-                break
-
-        if not active_session:
+        if not session.is_active(current_time):
             return TokenValidationResult(
                 is_valid=False,
                 error_message="Session expired or revoked"
@@ -73,5 +82,5 @@ class TokenValidationService(IValidateToken):
         return TokenValidationResult(
             is_valid=True,
             user_id=user_id,
-            session_id=active_session.id
+            session_id=session.id
         )

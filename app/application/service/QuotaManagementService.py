@@ -110,9 +110,9 @@ class QuotaManagementService(ICheckQuota):
             plan = await self.plan_repository.find_by_id(user_plan.plan_id)
             if plan:
                 quota_limit = plan.get_quota_limit(quota_type)
-                default_limit = quota_limit if quota_limit is not None else 1000
+                default_limit = quota_limit if quota_limit is not None else 50
             else:
-                default_limit = 1000
+                default_limit = 50
         else:
             default_limit = 1
 
