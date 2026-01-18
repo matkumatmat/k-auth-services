@@ -8,13 +8,13 @@ class UserBehaviorLog:
     id: UUID
     user_id: UUID | None
     action: str
-    service_name: str | None
-    ip_address: str
-    user_agent: str
-    device_fingerprint: str | None
-    geolocation: dict[str, str] | None
-    additional_metadata: dict[str, str | int | bool] | None
-    created_at: datetime
+    service_name: str | None =  None
+    ip_address: str | None = None
+    user_agent: str | None = None
+    device_fingerprint: str | None = None #hardcode
+    geolocation: dict[str, str] | None = None #hardcode
+    additional_metadata: dict[str, str | int | bool] | None = None
+    created_at: datetime = datetime.now()
 
     def is_login_action(self) -> bool:
         return "login" in self.action.lower()

@@ -53,8 +53,8 @@ class AuthenticationService(IAuthenticateUser):
                     action=UserBehaviorAction.LOGIN_FAILED,
                     ip_address=ip_address,
                     user_agent=device_info,
-                    metadata={"email": email, "reason": "user_not_found"},
-                    timestamp=current_time
+                    additional_metadata={"email": email, "reason": "user_not_found"},
+                    created_at=current_time
                 )
             )
             raise UserNotFoundException(details={"email": email})
@@ -67,8 +67,9 @@ class AuthenticationService(IAuthenticateUser):
                     action=UserBehaviorAction.LOGIN_FAILED,
                     ip_address=ip_address,
                     user_agent=device_info,
-                    metadata={"email": email, "reason": "account_not_active_or_verified"},
-                    timestamp=current_time
+                    additional_metadata={"email": email, "reason": "account_not_active_or_verified"},
+                    # service_name=service_name,
+                    created_at=current_time
                 )
             )
             raise AuthenticationException(message="User account is not active or verified")
@@ -81,8 +82,8 @@ class AuthenticationService(IAuthenticateUser):
                     action=UserBehaviorAction.LOGIN_FAILED,
                     ip_address=ip_address,
                     user_agent=device_info,
-                    metadata={"email": email, "reason": "password_not_configured"},
-                    timestamp=current_time
+                    additional_metadata={"email": email, "reason": "password_not_configured"},
+                    created_at=current_time
                 )
             )
             raise InvalidCredentialsException(message="Password authentication not configured for this user")
@@ -96,8 +97,8 @@ class AuthenticationService(IAuthenticateUser):
                     action=UserBehaviorAction.LOGIN_FAILED,
                     ip_address=ip_address,
                     user_agent=device_info,
-                    metadata={"email": email, "reason": "invalid_password"},
-                    timestamp=current_time
+                    additional_metadata={"email": email, "reason": "invalid_password"},
+                    created_at=current_time
                 )
             )
             raise InvalidCredentialsException()
@@ -111,8 +112,8 @@ class AuthenticationService(IAuthenticateUser):
                 action=UserBehaviorAction.LOGIN_SUCCESS,
                 ip_address=ip_address,
                 user_agent=device_info,
-                metadata={"email": email, "method": "email_password"},
-                timestamp=current_time
+                additional_metadata={"email": email, "method": "email_password"},
+                created_at=current_time
             )
         )
 
@@ -130,8 +131,8 @@ class AuthenticationService(IAuthenticateUser):
                     action=UserBehaviorAction.LOGIN_FAILED,
                     ip_address=ip_address,
                     user_agent=device_info,
-                    metadata={"phone": phone, "reason": "user_not_found"},
-                    timestamp=current_time
+                    additional_metadata={"phone": phone, "reason": "user_not_found"},
+                    created_at=current_time
                 )
             )
             raise UserNotFoundException(details={"phone": phone})
@@ -144,8 +145,8 @@ class AuthenticationService(IAuthenticateUser):
                     action=UserBehaviorAction.LOGIN_FAILED,
                     ip_address=ip_address,
                     user_agent=device_info,
-                    metadata={"phone": phone, "reason": "account_not_active_or_verified"},
-                    timestamp=current_time
+                    additional_metadata={"phone": phone, "reason": "account_not_active_or_verified"},
+                    created_at=current_time
                 )
             )
             raise AuthenticationException(message="User account is not active or verified")
@@ -160,8 +161,8 @@ class AuthenticationService(IAuthenticateUser):
                     action=UserBehaviorAction.LOGIN_FAILED,
                     ip_address=ip_address,
                     user_agent=device_info,
-                    metadata={"phone": phone, "reason": "invalid_or_expired_otp"},
-                    timestamp=current_time
+                    additional_metadata={"phone": phone, "reason": "invalid_or_expired_otp"},
+                    created_at=current_time
                 )
             )
             raise InvalidCredentialsException(message="Invalid or expired OTP code")
@@ -175,8 +176,8 @@ class AuthenticationService(IAuthenticateUser):
                     action=UserBehaviorAction.LOGIN_FAILED,
                     ip_address=ip_address,
                     user_agent=device_info,
-                    metadata={"phone": phone, "reason": "invalid_otp_code"},
-                    timestamp=current_time
+                    additional_metadata={"phone": phone, "reason": "invalid_otp_code"},
+                    created_at=current_time
                 )
             )
             raise InvalidCredentialsException(message="Invalid OTP code")
@@ -192,8 +193,8 @@ class AuthenticationService(IAuthenticateUser):
                 action=UserBehaviorAction.LOGIN_SUCCESS,
                 ip_address=ip_address,
                 user_agent=device_info,
-                metadata={"phone": phone, "method": "phone_otp"},
-                timestamp=current_time
+                additional_metadata={"phone": phone, "method": "phone_otp"},
+                created_at=current_time
             )
         )
 

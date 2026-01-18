@@ -20,9 +20,10 @@ class TransactionLoggerRepository(ITransactionLogger):
             operation=log.operation.value,
             record_id=log.record_id,
             user_id=log.user_id,
-            old_values=log.old_values,
-            new_values=log.new_values,
-            timestamp=log.timestamp
+            old_value=log.old_value,
+            new_value=log.new_value,
+            created_at=log.created_at,
+            transaction_id=log.transaction_id
         )
         self._session.add(log_model)
         await self._session.flush()
@@ -49,8 +50,8 @@ class TransactionLoggerRepository(ITransactionLogger):
             action=log.action.value,
             ip_address=log.ip_address,
             user_agent=log.user_agent,
-            metadata=log.metadata,
-            timestamp=log.timestamp
+            additional_metadata=log.additional_metadata,
+            created_at=log.created_at
         )
         self._session.add(log_model)
         await self._session.flush()

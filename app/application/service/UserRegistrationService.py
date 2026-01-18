@@ -77,9 +77,10 @@ class UserRegistrationService(IRegisterUser):
                 operation=DatabaseOperation.INSERT,
                 record_id=saved_user.id,
                 user_id=saved_user.id,
-                old_values={},
-                new_values={"email": email, "is_verified": False},
-                timestamp=current_time
+                old_value={},
+                new_value={"email": email, "is_verified": False},
+                created_at=current_time,
+                transaction_id=self.uuid_generator.generate()
             )
         )
 
@@ -127,9 +128,10 @@ class UserRegistrationService(IRegisterUser):
                 operation=DatabaseOperation.INSERT,
                 record_id=saved_user.id,
                 user_id=saved_user.id,
-                old_values={},
-                new_values={"phone": phone, "is_verified": False},
-                timestamp=current_time
+                old_value={},
+                new_value={"phone": phone, "is_verified": False},
+                transaction_id=self.uuid_generator.generate(),
+                created_at=current_time
             )
         )
 
@@ -175,9 +177,10 @@ class UserRegistrationService(IRegisterUser):
                 operation=DatabaseOperation.INSERT,
                 record_id=user_plan.id,
                 user_id=user_id,
-                old_values={},
-                new_values={"plan_id": str(free_plan.id), "plan_name": free_plan.name},
-                timestamp=current_time
+                old_value={},
+                new_value={"plan_id": str(free_plan.id), "plan_name": free_plan.name},
+                transaction_id=self.uuid_generator.generate(),
+                created_at=current_time
             )
         )
 
@@ -205,9 +208,10 @@ class UserRegistrationService(IRegisterUser):
                     operation=DatabaseOperation.INSERT,
                     record_id=service_access.id,
                     user_id=user_id,
-                    old_values={},
-                    new_values={"service_name": service.name},
-                    timestamp=current_time
+                    old_value={},
+                    new_value={"service_name": service.name},
+                    transaction_id=self.uuid_generator.generate(),
+                    created_at=current_time
                 )
             )
 
@@ -258,9 +262,10 @@ class UserRegistrationService(IRegisterUser):
                 operation=DatabaseOperation.UPDATE,
                 record_id=user.id,
                 user_id=user.id,
-                old_values={"is_verified": False},
-                new_values={"is_verified": True},
-                timestamp=current_time
+                old_value={"is_verified": False},
+                new_value={"is_verified": True},
+                transaction_id=self.uuid_generator.generate(),
+                created_at=current_time
             )
         )
 
@@ -297,9 +302,10 @@ class UserRegistrationService(IRegisterUser):
                 operation=DatabaseOperation.UPDATE,
                 record_id=user.id,
                 user_id=user.id,
-                old_values={"is_verified": False},
-                new_values={"is_verified": True},
-                timestamp=current_time
+                old_value={"is_verified": False},
+                new_value={"is_verified": True},
+                transaction_id=self.uuid_generator.generate(),
+                created_at=current_time
             )
         )
 
