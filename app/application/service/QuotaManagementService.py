@@ -12,8 +12,11 @@ from app.domain.DatabaseTransactionLog import DatabaseTransactionLog
 from app.domain.Quota import Quota
 from app.domain.ValueObjects import DatabaseOperation
 from app.shared.DateTime import DateTimeProtocol
-from app.shared.Exceptions import AuthorizationException, InsufficientQuotaException
 from app.shared.UuidGenerator import UuidGeneratorProtocol
+from app.domain.exceptions import (
+    AccessDeniedException,
+    InsufficientQuotaException,
+)
 
 
 class QuotaManagementService(ICheckQuota):
@@ -64,14 +67,7 @@ class QuotaManagementService(ICheckQuota):
 
         service_access_result = await self.service_access_validator.execute(user_id, service_name)
         if not service_access_result.is_allowed:
-            raise AuthorizationException(
-                message=f"User does not have access to service: {service_name}",
-                details={
-                    "user_id": str(user_id),
-                    "service_name": service_name,
-                    "reason": service_access_result.error_message
-                }
-            )
+            raise AccessDeniedException(resource=service_name)
 
         quota = await self.quota_repository.find_by_user_and_service(
             user_id, service_name, quota_type
@@ -85,28 +81,18 @@ class QuotaManagementService(ICheckQuota):
 
         if not quota.can_consume(amount):
             raise InsufficientQuotaException(
-                details={
-                    "service_name": service_name,
-                    "quota_type": quota_type,
-                    "current_usage": quota.current_usage,
-                    "limit": quota.limit,
-                    "requested": amount
-                }
+                quota_type=quota_type,
+                current=quota.current_usage,
+                required=amount
             )
 
         update_success = await self.quota_repository.update_usage(quota.id, amount)
 
         if not update_success:
             raise InsufficientQuotaException(
-                message="Quota limit exceeded due to concurrent consumption",
-                details={
-                    "service_name": service_name,
-                    "quota_type": quota_type,
-                    "current_usage": quota.current_usage,
-                    "limit": quota.limit,
-                    "requested": amount,
-                    "reason": "Atomic update failed - quota consumed by concurrent request"
-                }
+                quota_type=quota_type,
+                current=quota.current_usage,
+                required=amount
             )
 
         await self.transaction_logger.log_database_transaction(

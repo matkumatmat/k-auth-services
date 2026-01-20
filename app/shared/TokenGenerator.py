@@ -5,7 +5,10 @@ from typing import Any, Protocol
 import jwt
 
 from app.shared.DateTime import DateTimeProtocol
-from app.shared.Exceptions import TokenExpiredException, TokenInvalidException
+from app.domain.exceptions import (
+    TokenExpiredException,
+    TokenInvalidException,
+)
 
 
 class TokenGeneratorProtocol(Protocol):

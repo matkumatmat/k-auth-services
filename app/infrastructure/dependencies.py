@@ -1,8 +1,9 @@
 from collections.abc import AsyncGenerator
 
-from fastapi import Depends
+from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.application.dto.AuthenticationDTO import AuthenticatedUser
 from app.application.service.AuthenticationService import AuthenticationService
 from app.application.service.LinkAuthProviderService import LinkAuthProviderService
 from app.application.service.QuotaManagementService import QuotaManagementService
@@ -12,7 +13,7 @@ from app.application.service.RevokeSessionService import RevokeSessionService
 from app.application.service.ServiceAccessValidationService import ServiceAccessValidationService
 from app.application.service.TokenValidationService import TokenValidationService
 from app.application.service.UserRegistrationService import UserRegistrationService
-from app.infrastructure.adapter.output.database.repositories.ApiKeyRepository import ApiKeyRepository
+# from app.infrastructure.adapter.output.database.repositories.ApiKeyRepository import ApiKeyRepository
 from app.infrastructure.adapter.output.database.repositories.AuthProviderRepository import AuthProviderRepository
 from app.infrastructure.adapter.output.database.repositories.OtpCodeRepository import OtpCodeRepository
 from app.infrastructure.adapter.output.database.repositories.PlanRepository import PlanRepository
@@ -188,3 +189,30 @@ async def get_link_auth_provider_service(
             max_requests=5,
             window_seconds=600
     ))
+
+
+async def get_current_user(
+    authorization: str = Header(..., alias="Authorization"),
+    token_validation_service: TokenValidationService = Depends(get_token_validation_service)
+) -> AuthenticatedUser:
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorization header format. Expected 'Bearer <token>'"
+        )
+
+    token = authorization.replace("Bearer ", "")
+
+    result = await token_validation_service.execute(token)
+
+    if not result.is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=result.error_message or "Invalid or expired token"
+        )
+
+    return AuthenticatedUser(
+        user_id=result.user_id,
+        session_id=result.session_id
+    )
+

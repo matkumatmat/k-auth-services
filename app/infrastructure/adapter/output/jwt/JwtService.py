@@ -19,8 +19,8 @@ class JwtService(IJwtService):
             "sub": str(user_id),
             "session_id": str(session_id),
             "scopes": scopes,
-            "exp": datetime.now(timezone.utc) + timedelta(minutes=self._access_token_expire_minutes),
-            "iat": datetime.now(timezone.utc),
+            "exp": datetime.now(timezone.UTC) + timedelta(minutes=self._access_token_expire_minutes),
+            "iat": datetime.now(timezone.UTC),
             "type": "access"
         }
         return jwt.encode(to_encode, self._secret_key, algorithm="HS256")
@@ -28,8 +28,8 @@ class JwtService(IJwtService):
     def create_refresh_token(self, session_id: UUID) -> str:
         to_encode = {
             "sub": str(session_id),
-            "exp": datetime.now(timezone.utc) + timedelta(days=self._refresh_token_expire_days),
-            "iat": datetime.now(timezone.utc),
+            "exp": datetime.now(timezone.UTC) + timedelta(days=self._refresh_token_expire_days),
+            "iat": datetime.now(timezone.UTC),
             "type": "refresh"
         }
         return jwt.encode(to_encode, self._secret_key, algorithm="HS256")

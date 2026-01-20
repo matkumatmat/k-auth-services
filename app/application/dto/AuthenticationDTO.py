@@ -16,7 +16,13 @@ class AuthenticationRequest:
 @dataclass
 class AuthenticationResult:
     user_id: UUID
+    session_id : UUID
     access_token: str
     refresh_token: str
     expires_in: int
     token_type: str = "Bearer"
+
+@dataclass
+class AuthenticatedUser:
+    user_id : UUID
+    session_id : UUID

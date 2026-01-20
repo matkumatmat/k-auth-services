@@ -4,8 +4,11 @@ from app.application.dto.TokenValidationDTO import TokenValidationResult
 from app.application.port.input.IValidateToken import IValidateToken
 from app.application.port.output.ISessionRepository import ISessionRepository
 from app.shared.DateTime import DateTimeProtocol
-from app.shared.Exceptions import TokenExpiredException, TokenInvalidException
 from app.shared.TokenGenerator import ITokenGenerator
+from app.domain.exceptions import (
+    TokenExpiredException,
+    TokenInvalidException,
+)
 
 
 class TokenValidationService(IValidateToken):
@@ -82,5 +85,6 @@ class TokenValidationService(IValidateToken):
         return TokenValidationResult(
             is_valid=True,
             user_id=user_id,
-            session_id=session.id
+            session_id=session.id,
+            refresh_token=session.refresh_token_hash
         )

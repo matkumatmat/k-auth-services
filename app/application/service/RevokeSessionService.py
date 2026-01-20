@@ -6,8 +6,11 @@ from app.application.port.output.ITransactionLogger import ITransactionLogger
 from app.domain.UserBehaviorLog import UserBehaviorLog
 from app.domain.ValueObjects import UserBehaviorAction
 from app.shared.DateTime import DateTimeProtocol
-from app.shared.Exceptions import AuthorizationException, UserNotFoundException
 from app.shared.UuidGenerator import UuidGeneratorProtocol
+from app.domain.exceptions import (
+    AuthorizationException,
+    SessionNotFoundException,
+)
 
 
 class RevokeSessionService(IRevokeSession):
@@ -27,10 +30,7 @@ class RevokeSessionService(IRevokeSession):
         session = await self.session_repository.find_by_id(session_id)
 
         if not session:
-            raise UserNotFoundException(
-                message="Session not found",
-                details={"session_id": str(session_id)}
-            )
+            raise SessionNotFoundException(session_id=str(session_id))
 
         if authenticated_user_id is not None and session.user_id != authenticated_user_id:
             raise AuthorizationException(

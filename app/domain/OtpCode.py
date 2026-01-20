@@ -25,3 +25,21 @@ class OtpCode:
 
     def is_valid(self, current_time: datetime) -> bool:
         return not self.is_expired(current_time) and not self.is_used()
+
+    def can_be_used(self, current_time: datetime) -> bool:
+        return self.is_valid(current_time)
+
+    def matches_target(self, target: str) -> bool:
+        return self.delivery_target == target
+
+    def is_for_registration(self) -> bool:
+        return self.purpose == OtpPurpose.REGISTRATION
+
+    def is_for_login(self) -> bool:
+        return self.purpose == OtpPurpose.LOGIN
+
+    def is_for_password_reset(self) -> bool:
+        return self.purpose == OtpPurpose.PASSWORD_RESET
+
+    def mark_used(self, current_time: datetime) -> None:
+        self.used_at = current_time

@@ -29,3 +29,21 @@ class User:
 
     def can_authenticate(self) -> bool:
         return self.is_active and self.is_verified and not self.is_deleted()
+
+    def has_primary_contact(self) -> bool:
+        return self.has_email() or self.has_phone()
+
+    def can_add_auth_provider(self) -> bool:
+        return self.is_verified and self.is_active and not self.is_deleted()
+
+    def get_primary_contact(self) -> str | None:
+        return self.email if self.has_email() else self.phone
+
+    def supports_password_auth(self) -> bool:
+        return (self.has_email() or self.has_phone()) and self.has_password()
+
+    def mark_verified(self) -> None:
+        self.is_verified = True
+
+    def mark_unverified(self) -> None:
+        self.is_verified = False

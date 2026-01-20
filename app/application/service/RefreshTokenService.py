@@ -10,9 +10,15 @@ from app.domain.UserBehaviorLog import UserBehaviorLog
 from app.domain.ValueObjects import UserBehaviorAction
 from app.shared.Cryptography import Salter
 from app.shared.DateTime import DateTimeProtocol
-from app.shared.Exceptions import AuthenticationException, TokenExpiredException, TokenInvalidException
 from app.shared.TokenGenerator import ITokenGenerator
 from app.shared.UuidGenerator import UuidGeneratorProtocol
+from app.domain.exceptions import (
+    SessionExpiredException,
+    SessionInactiveException,
+    SessionNotFoundException,
+    TokenExpiredException,
+    TokenInvalidException,
+)
 
 
 class RefreshTokenService(IRefreshToken):
@@ -36,44 +42,44 @@ class RefreshTokenService(IRefreshToken):
         try:
             payload = self.token_generator.decode(refresh_token)
         except TokenExpiredException:
-            raise TokenExpiredException(message="Refresh token has expired")
+            raise TokenExpiredException()
         except TokenInvalidException:
-            raise TokenInvalidException(message="Refresh token is invalid")
+            raise TokenInvalidException()
 
         token_type = payload.get("type")
         if token_type != "refresh":
-            raise TokenInvalidException(message="Token is not a refresh token")
+            raise TokenInvalidException("Token is not a refresh token")
 
         user_id_str = payload.get("user_id")
         if not user_id_str:
-            raise TokenInvalidException(message="Token payload missing user_id")
+            raise TokenInvalidException("Token payload missing user_id")
 
         session_id_str = payload.get("session_id")
         if not session_id_str:
-            raise TokenInvalidException(message="Token payload missing session_id")
+            raise TokenInvalidException("Token payload missing session_id")
 
         try:
             user_id = UUID(user_id_str)
             session_id = UUID(session_id_str)
         except (ValueError, TypeError):
-            raise TokenInvalidException(message="Invalid user_id or session_id format in token")
+            raise TokenInvalidException("Invalid user_id or session_id format in token")
 
         matching_session = await self.session_repository.find_by_id(session_id)
 
         if not matching_session:
-            raise AuthenticationException(message="Session not found")
+            raise SessionNotFoundException(session_id=str(session_id))
 
         if matching_session.user_id != user_id:
-            raise AuthenticationException(message="Session does not belong to user")
+            raise TokenInvalidException("Session does not belong to user")
 
         current_time = self.datetime_converter.now_utc()
 
         if not matching_session.is_active(current_time):
-            raise AuthenticationException(message="Session is expired or revoked")
+            raise SessionInactiveException(session_id=str(session_id))
 
         is_valid = self.salter.verify_password(refresh_token, matching_session.refresh_token_hash)
         if not is_valid:
-            raise AuthenticationException(message="Invalid refresh token")
+            raise TokenInvalidException("Invalid refresh token")
 
         await self.session_repository.revoke(matching_session.id)
 
@@ -130,6 +136,7 @@ class RefreshTokenService(IRefreshToken):
 
         return AuthenticationResult(
             user_id=user_id,
+            session_id=new_session_id,
             access_token=access_token,
             refresh_token=new_refresh_token,
             expires_in=3600,

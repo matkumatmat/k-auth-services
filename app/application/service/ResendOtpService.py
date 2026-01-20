@@ -12,9 +12,13 @@ from app.domain.ValueObjects import AuthProviderType, OtpDeliveryMethod, OtpPurp
 from app.infrastructure.config.EnvConfig import EnvConfig
 from app.shared.Cryptography import Salter
 from app.shared.DateTime import DateTimeProtocol
-from app.shared.Exceptions import UserNotFoundException
 from app.shared.OtpRateLimiter import OtpRateLimiter
 from app.shared.UuidGenerator import UuidGeneratorProtocol
+from app.domain.exceptions import (
+    UserEmailRequiredException,
+    UserNotFoundException,
+    UserPhoneRequiredException,
+)
 
 
 class ResendOtpService(IResendOtp):
@@ -46,10 +50,7 @@ class ResendOtpService(IResendOtp):
             raise UserNotFoundException(details={"user_id": str(user_id)})
 
         if not user.has_email():
-            raise UserNotFoundException(
-                message="User does not have email configured",
-                details={"user_id": str(user_id)}
-            )
+            raise UserEmailRequiredException(user_id=str(user_id))
 
         email = user.email
 
@@ -94,10 +95,7 @@ class ResendOtpService(IResendOtp):
             raise UserNotFoundException(details={"user_id": str(user_id)})
 
         if not user.has_phone():
-            raise UserNotFoundException(
-                message="User does not have phone configured",
-                details={"user_id": str(user_id)}
-            )
+            raise UserPhoneRequiredException(user_id=str(user_id))
 
         phone = user.phone
 

@@ -7,11 +7,15 @@ from app.application.service.QuotaManagementService import QuotaManagementServic
 from app.application.service.ServiceAccessValidationService import ServiceAccessValidationService
 from app.application.service.TokenValidationService import TokenValidationService
 from app.infrastructure.dependencies import (
+    get_current_user,
     get_quota_management_service,
     get_service_access_validation_service,
     get_token_validation_service
 )
-from app.shared.Exceptions import InsufficientQuotaException
+from app.domain.exceptions import (
+    AccessDeniedException,
+    InsufficientQuotaException,
+)
 
 router = APIRouter(prefix="/validate", tags=["Validation"])
 
@@ -28,7 +32,6 @@ class ValidateTokenResponse(BaseModel):
 
 
 class ValidateServiceAccessRequest(BaseModel):
-    user_id: str
     service_name: str
 
 
@@ -39,14 +42,12 @@ class ValidateServiceAccessResponse(BaseModel):
 
 
 class CheckQuotaRequest(BaseModel):
-    user_id: str
     service_name: str
     quota_type: str = "api_calls_per_day"
     amount: int = 1
 
 
 class ConsumeQuotaRequest(BaseModel):
-    user_id: str
     service_name: str
     quota_type: str = "api_calls_per_day"
     amount: int = 1
@@ -78,61 +79,55 @@ async def validate_token(
 @router.post("/service-access", response_model=ValidateServiceAccessResponse)
 async def validate_service_access(
     request: ValidateServiceAccessRequest,
-    service: ServiceAccessValidationService = Depends(get_service_access_validation_service)
+    service: ServiceAccessValidationService = Depends(get_service_access_validation_service),
+    current_user = Depends(get_current_user)
 ):
-    try:
-        user_id = UUID(request.user_id)
-        result = await service.execute(user_id, request.service_name)
-        return ValidateServiceAccessResponse(
-            is_allowed=result.is_allowed,
-            allowed_features=result.allowed_features,
-            error_message=result.error_message
-        )
-    except ValueError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid user_id format")
+    result = await service.execute(current_user.user_id, request.service_name)
+    return ValidateServiceAccessResponse(
+        is_allowed=result.is_allowed,
+        allowed_features=result.allowed_features,
+        error_message=result.error_message
+    )
 
 
 @router.post("/quota/check", response_model=QuotaResponse)
 async def check_quota(
     request: CheckQuotaRequest,
-    service: QuotaManagementService = Depends(get_quota_management_service)
+    service: QuotaManagementService = Depends(get_quota_management_service),
+    current_user = Depends(get_current_user)
 ):
-    try:
-        user_id = UUID(request.user_id)
-        result = await service.execute(
-            user_id,
-            request.service_name,
-            request.quota_type,
-            request.amount
-        )
-        return QuotaResponse(
-            can_proceed=result.can_proceed,
-            current_usage=result.current_usage,
-            limit=result.limit,
-            remaining=result.remaining,
-            reset_at=result.reset_at,
-            error_message=result.error_message
-        )
-    except ValueError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid user_id format")
+    result = await service.execute(
+        current_user.user_id,
+        request.service_name,
+        request.quota_type,
+        request.amount
+    )
+    return QuotaResponse(
+        can_proceed=result.can_proceed,
+        current_usage=result.current_usage,
+        limit=result.limit,
+        remaining=result.remaining,
+        reset_at=result.reset_at,
+        error_message=result.error_message
+    )
 
 
 @router.post("/quota/consume", response_model=QuotaResponse)
 async def consume_quota(
     request: ConsumeQuotaRequest,
-    service: QuotaManagementService = Depends(get_quota_management_service)
+    service: QuotaManagementService = Depends(get_quota_management_service),
+    current_user = Depends(get_current_user)
 ):
     try:
-        user_id = UUID(request.user_id)
         await service.consume(
-            user_id,
+            current_user.user_id,
             request.service_name,
             request.quota_type,
             request.amount
         )
 
         check_result = await service.execute(
-            user_id,
+            current_user.user_id,
             request.service_name,
             request.quota_type,
             0
@@ -146,10 +141,8 @@ async def consume_quota(
             reset_at=check_result.reset_at,
             error_message=None
         )
-    except InsufficientQuotaException as e:
+    except (InsufficientQuotaException, AccessDeniedException) as e:
         raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=e.details
+            status_code=e.status_code,
+            detail=e.message
         )
-    except ValueError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid user_id format")

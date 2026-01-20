@@ -1,8 +1,5 @@
 import json
-from typing import Any
-
 import redis.asyncio as aioredis
-
 from app.infrastructure.config.EnvConfig import RedisConfig
 
 

@@ -8,3 +8,4 @@ class TokenValidationResult:
     user_id: UUID | None = None
     session_id: UUID | None = None
     error_message: str | None = None
+    refresh_token: str | None = None

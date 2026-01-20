@@ -13,9 +13,12 @@ from app.domain.ValueObjects import AuthProviderType, OtpDeliveryMethod, OtpPurp
 from app.infrastructure.config.EnvConfig import EnvConfig
 from app.shared.Cryptography import Salter
 from app.shared.DateTime import DateTimeProtocol
-from app.shared.Exceptions import UserAlreadyExistsException, UserNotFoundException
 from app.shared.OtpRateLimiter import OtpRateLimiter
 from app.shared.UuidGenerator import UuidGeneratorProtocol
+from app.domain.exceptions import (
+    UserAlreadyExistsException,
+    UserNotFoundException,
+)
 
 
 class LinkAuthProviderService(ILinkAuthProvider):
@@ -48,19 +51,13 @@ class LinkAuthProviderService(ILinkAuthProvider):
 
         existing_user_with_email = await self.user_repository.find_by_email(email)
         if existing_user_with_email and existing_user_with_email.id != user_id:
-            raise UserAlreadyExistsException(
-                message="Email is already linked to another user",
-                details={"email": email}
-            )
+            raise UserAlreadyExistsException(details={"email": email})
 
         existing_provider = await self.auth_provider_repository.find_by_user_and_type(
             user_id, AuthProviderType.EMAIL
         )
         if existing_provider:
-            raise UserAlreadyExistsException(
-                message="User already has email provider linked",
-                details={"user_id": str(user_id)}
-            )
+            raise UserAlreadyExistsException(details={"user_id": str(user_id)})
 
         current_time = self.datetime_converter.now_utc()
         password_hash = self.salter.hash_password(password)
@@ -120,19 +117,13 @@ class LinkAuthProviderService(ILinkAuthProvider):
 
         existing_user_with_phone = await self.user_repository.find_by_phone(phone)
         if existing_user_with_phone and existing_user_with_phone.id != user_id:
-            raise UserAlreadyExistsException(
-                message="Phone is already linked to another user",
-                details={"phone": phone}
-            )
+            raise UserAlreadyExistsException(details={"phone": phone})
 
         existing_provider = await self.auth_provider_repository.find_by_user_and_type(
             user_id, AuthProviderType.WHATSAPP
         )
         if existing_provider:
-            raise UserAlreadyExistsException(
-                message="User already has phone provider linked",
-                details={"user_id": str(user_id)}
-            )
+            raise UserAlreadyExistsException(details={"user_id": str(user_id)})
 
         current_time = self.datetime_converter.now_utc()
 

@@ -23,3 +23,12 @@ class AuthProvider:
 
     def is_whatsapp_provider(self) -> bool:
         return self.provider_type == AuthProviderType.WHATSAPP
+
+    def requires_password(self) -> bool:
+        return self.is_email_provider()
+
+    def requires_otp(self) -> bool:
+        return self.is_whatsapp_provider()
+
+    def get_verification_target(self) -> str:
+        return self.provider_user_id

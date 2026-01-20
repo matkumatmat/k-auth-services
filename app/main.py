@@ -9,12 +9,14 @@ from app.infrastructure.adapter.input.http.OtpController import router as otp_ro
 from app.infrastructure.adapter.input.http.UserController import router as user_router
 from app.infrastructure.adapter.input.http.ValidationController import router as validation_router
 from app.infrastructure.adapter.input.middleware.ExceptionHandler import (
+    database_exception_handler,
     domain_exception_handler,
     generic_exception_handler
 )
 from app.infrastructure.config.EnvConfig import EnvConfig
 from app.infrastructure.dependencies import db_factory, redis_client
-from app.shared.Exceptions import DomainException
+from app.domain.exceptions import DomainException
+from app.shared.Exceptions import DatabaseException
 
 config = EnvConfig.load()
 
@@ -46,6 +48,7 @@ app.add_middleware(
 )
 
 app.add_exception_handler(DomainException, domain_exception_handler)
+app.add_exception_handler(DatabaseException, database_exception_handler)
 app.add_exception_handler(Exception, generic_exception_handler)
 
 app.include_router(auth_router, prefix="/api/v1")

@@ -13,9 +13,13 @@ from app.domain.UserBehaviorLog import UserBehaviorLog
 from app.domain.ValueObjects import OtpPurpose, UserBehaviorAction
 from app.shared.Cryptography import Salter
 from app.shared.DateTime import DateTimeProtocol
-from app.shared.Exceptions import AuthenticationException, InvalidCredentialsException, UserNotFoundException
 from app.shared.TokenGenerator import ITokenGenerator
 from app.shared.UuidGenerator import UuidGeneratorProtocol
+from app.domain.exceptions import (
+    AuthenticationException,
+    InvalidCredentialsException,
+    UserNotFoundException,
+)
 
 
 class AuthenticationService(IAuthenticateUser):
@@ -72,7 +76,7 @@ class AuthenticationService(IAuthenticateUser):
                     created_at=current_time
                 )
             )
-            raise AuthenticationException(message="User account is not active or verified")
+            raise AuthenticationException("User account is not active or verified")
 
         if not user.has_password():
             await self.transaction_logger.log_user_behavior(
@@ -86,7 +90,7 @@ class AuthenticationService(IAuthenticateUser):
                     created_at=current_time
                 )
             )
-            raise InvalidCredentialsException(message="Password authentication not configured for this user")
+            raise InvalidCredentialsException()
 
         is_valid = self.salter.verify_password(password, user.password_hash)
         if not is_valid:
@@ -149,7 +153,7 @@ class AuthenticationService(IAuthenticateUser):
                     created_at=current_time
                 )
             )
-            raise AuthenticationException(message="User account is not active or verified")
+            raise AuthenticationException("User account is not active or verified")
 
         otp = await self.otp_repository.find_valid_by_target(phone, OtpPurpose.LOGIN)
 
@@ -165,7 +169,7 @@ class AuthenticationService(IAuthenticateUser):
                     created_at=current_time
                 )
             )
-            raise InvalidCredentialsException(message="Invalid or expired OTP code")
+            raise InvalidCredentialsException()
 
         is_valid = self.salter.verify_password(otp_code, otp.code_hash)
         if not is_valid:
@@ -180,7 +184,7 @@ class AuthenticationService(IAuthenticateUser):
                     created_at=current_time
                 )
             )
-            raise InvalidCredentialsException(message="Invalid OTP code")
+            raise InvalidCredentialsException()
 
         await self.otp_repository.mark_used(otp.id)
 
@@ -247,6 +251,7 @@ class AuthenticationService(IAuthenticateUser):
 
         return AuthenticationResult(
             user_id=user_id,
+            session_id=session_id,
             access_token=access_token,
             refresh_token=refresh_token,
             expires_in=3600,
