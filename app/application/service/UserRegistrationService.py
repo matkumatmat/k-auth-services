@@ -6,6 +6,7 @@ from app.application.port.input.IRegisterUser import IRegisterUser
 from app.application.port.output.IAuthProviderRepository import IAuthProviderRepository
 from app.application.port.output.IOtpCodeRepository import IOtpCodeRepository
 from app.application.port.output.IPlanRepository import IPlanRepository
+from app.application.port.output.IPlanServiceRepository import IPlanServiceRepository
 from app.application.port.output.IServiceAccessRepository import IServiceAccessRepository
 from app.application.port.output.IServiceRepository import IServiceRepository
 from app.application.port.output.ITransactionLogger import ITransactionLogger
@@ -16,8 +17,8 @@ from app.domain.DatabaseTransactionLog import DatabaseTransactionLog
 from app.domain.ServiceAccess import ServiceAccess
 from app.domain.User import User
 from app.domain.UserPlan import UserPlan
-# FIX: Tambahkan UserPlanStatus di import
 from app.domain.ValueObjects import AuthProviderType, BillingCycle, DatabaseOperation, OtpPurpose, OtpDeliveryMethod, UserPlanStatus
+from app.infrastructure.config.EnvConfig import EnvConfig
 from app.shared.Cryptography import Salter
 from app.shared.DateTime import DateTimeProtocol
 from app.shared.Exceptions import InvalidCredentialsException, UserAlreadyExistsException, UserNotFoundException
@@ -34,10 +35,12 @@ class UserRegistrationService(IRegisterUser):
         user_plan_repository: IUserPlanRepository,
         service_repository: IServiceRepository,
         service_access_repository: IServiceAccessRepository,
+        plan_service_repository: IPlanServiceRepository,
         transaction_logger: ITransactionLogger,
         salter: Salter,
         uuid_generator: UuidGeneratorProtocol,
         datetime_converter: DateTimeProtocol,
+        config: EnvConfig,
     ):
         self.user_repository = user_repository
         self.auth_provider_repository = auth_provider_repository
@@ -46,10 +49,12 @@ class UserRegistrationService(IRegisterUser):
         self.user_plan_repository = user_plan_repository
         self.service_repository = service_repository
         self.service_access_repository = service_access_repository
+        self.plan_service_repository = plan_service_repository
         self.transaction_logger = transaction_logger
         self.salter = salter
         self.uuid_generator = uuid_generator
         self.datetime_converter = datetime_converter
+        self.config = config
 
     async def execute_with_email(self, email: str, password: str) -> User:
         existing_user = await self.user_repository.find_by_email(email)
@@ -79,8 +84,9 @@ class UserRegistrationService(IRegisterUser):
 
         # Generate & Save OTP
         raw_otp_code = ''.join(secrets.choice(string.digits) for _ in range(6))
-        print(f"\n[DEBUG] OTP for {email}: {raw_otp_code}\n")
-        
+        if self.config.debug_otp:
+            print(f"\n[DEBUG] OTP for {email}: {raw_otp_code}\n")
+
         otp_hash = self.salter.hash_password(raw_otp_code)
         otp_code = OtpCode(
             id=self.uuid_generator.generate(),
@@ -214,7 +220,7 @@ class UserRegistrationService(IRegisterUser):
             )
         )
 
-        default_services = await self._get_default_services_for_plan(free_plan.name)
+        default_services = await self._get_default_services_for_plan(free_plan.id)
 
         for service in default_services:
             service_access = ServiceAccess(
@@ -245,21 +251,16 @@ class UserRegistrationService(IRegisterUser):
                 )
             )
 
-    async def _get_default_services_for_plan(self, plan_name: str) -> list:
-        all_services = await self.service_repository.find_all_active()
+    async def _get_default_services_for_plan(self, plan_id: UUID) -> list:
+        plan_services = await self.plan_service_repository.find_by_plan_id(plan_id)
 
-        if plan_name == "Anonym":
+        if not plan_services:
             return []
-        elif plan_name == "Free":
-            default_service_names = ["cvmaker", "jobportal"]
-            return [s for s in all_services if s.name in default_service_names]
-        elif plan_name == "Pro":
-            default_service_names = ["cvmaker", "jobportal", "3dbinpacking", "media_information"]
-            return [s for s in all_services if s.name in default_service_names]
-        elif plan_name == "Enterprise":
-            return all_services
-        else:
-            return []
+
+        service_ids = [ps.service_id for ps in plan_services]
+        services = await self.service_repository.find_by_ids(service_ids)
+
+        return services
 
     async def verify_email(self, user_id: UUID, otp_code: str) -> bool:
         user = await self.user_repository.find_by_id(user_id)

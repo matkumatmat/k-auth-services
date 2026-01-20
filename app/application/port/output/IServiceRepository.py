@@ -18,5 +18,9 @@ class IServiceRepository(ABC):
         pass
 
     @abstractmethod
+    async def find_by_ids(self, service_ids: list[UUID]) -> list[Service]:
+        pass
+
+    @abstractmethod
     async def save(self, service: Service) -> Service:
         pass

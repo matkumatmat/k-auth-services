@@ -4,7 +4,7 @@ from uuid import UUID
 
 class IRevokeSession(ABC):
     @abstractmethod
-    async def execute(self, session_id: UUID) -> None:
+    async def execute(self, session_id: UUID, authenticated_user_id: UUID | None = None) -> None:
         pass
 
     @abstractmethod

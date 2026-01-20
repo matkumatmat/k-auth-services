@@ -31,6 +31,14 @@ class ServiceRepository(IServiceRepository):
         models = result.scalars().all()
         return [ServiceMapper.to_domain(model) for model in models]
 
+    async def find_by_ids(self, service_ids: list[UUID]) -> list[Service]:
+        if not service_ids:
+            return []
+        stmt = select(ServiceModel).where(ServiceModel.id.in_(service_ids))
+        result = await self._session.execute(stmt)
+        models = result.scalars().all()
+        return [ServiceMapper.to_domain(model) for model in models]
+
     async def save(self, service: Service) -> Service:
         service_model = ServiceMapper.to_persistence(service)
         self._session.add(service_model)

@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.infrastructure.adapter.input.http.AuthController import router as auth_router
+from app.infrastructure.adapter.input.http.OtpController import router as otp_router
 from app.infrastructure.adapter.input.http.UserController import router as user_router
 from app.infrastructure.adapter.input.http.ValidationController import router as validation_router
 from app.infrastructure.adapter.input.middleware.ExceptionHandler import (
@@ -50,6 +51,7 @@ app.add_exception_handler(Exception, generic_exception_handler)
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(validation_router, prefix="/api/v1")
 app.include_router(user_router, prefix="/api/v1")
+app.include_router(otp_router, prefix="/api/v1")
 
 
 @app.get("/health")

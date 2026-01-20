@@ -3,6 +3,7 @@ from uuid import UUID
 
 from app.application.dto.QuotaCheckDTO import QuotaCheckResult
 from app.application.port.input.ICheckQuota import ICheckQuota
+from app.application.port.input.IValidateServiceAccess import IValidateServiceAccess
 from app.application.port.output.IPlanRepository import IPlanRepository
 from app.application.port.output.IQuotaRepository import IQuotaRepository
 from app.application.port.output.ITransactionLogger import ITransactionLogger
@@ -11,7 +12,7 @@ from app.domain.DatabaseTransactionLog import DatabaseTransactionLog
 from app.domain.Quota import Quota
 from app.domain.ValueObjects import DatabaseOperation
 from app.shared.DateTime import DateTimeProtocol
-from app.shared.Exceptions import InsufficientQuotaException
+from app.shared.Exceptions import AuthorizationException, InsufficientQuotaException
 from app.shared.UuidGenerator import UuidGeneratorProtocol
 
 
@@ -24,6 +25,7 @@ class QuotaManagementService(ICheckQuota):
         transaction_logger: ITransactionLogger,
         datetime_converter: DateTimeProtocol,
         uuid_generator: UuidGeneratorProtocol,
+        service_access_validator: IValidateServiceAccess,
     ):
         self.quota_repository = quota_repository
         self.user_plan_repository = user_plan_repository
@@ -31,6 +33,7 @@ class QuotaManagementService(ICheckQuota):
         self.transaction_logger = transaction_logger
         self.datetime_converter = datetime_converter
         self.uuid_generator = uuid_generator
+        self.service_access_validator = service_access_validator
 
     async def execute(self, user_id: UUID, service_name: str, quota_type: str, amount: int) -> QuotaCheckResult:
         current_time = self.datetime_converter.now_utc()
@@ -59,6 +62,17 @@ class QuotaManagementService(ICheckQuota):
     async def consume(self, user_id: UUID, service_name: str, quota_type: str, amount: int) -> bool:
         current_time = self.datetime_converter.now_utc()
 
+        service_access_result = await self.service_access_validator.execute(user_id, service_name)
+        if not service_access_result.is_allowed:
+            raise AuthorizationException(
+                message=f"User does not have access to service: {service_name}",
+                details={
+                    "user_id": str(user_id),
+                    "service_name": service_name,
+                    "reason": service_access_result.error_message
+                }
+            )
+
         quota = await self.quota_repository.find_by_user_and_service(
             user_id, service_name, quota_type
         )
@@ -80,7 +94,20 @@ class QuotaManagementService(ICheckQuota):
                 }
             )
 
-        await self.quota_repository.update_usage(quota.id, amount)
+        update_success = await self.quota_repository.update_usage(quota.id, amount)
+
+        if not update_success:
+            raise InsufficientQuotaException(
+                message="Quota limit exceeded due to concurrent consumption",
+                details={
+                    "service_name": service_name,
+                    "quota_type": quota_type,
+                    "current_usage": quota.current_usage,
+                    "limit": quota.limit,
+                    "requested": amount,
+                    "reason": "Atomic update failed - quota consumed by concurrent request"
+                }
+            )
 
         await self.transaction_logger.log_database_transaction(
             DatabaseTransactionLog(

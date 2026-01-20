@@ -6,6 +6,7 @@ from app.application.port.output.ITransactionLogger import ITransactionLogger
 from app.domain.UserBehaviorLog import UserBehaviorLog
 from app.domain.ValueObjects import UserBehaviorAction
 from app.shared.DateTime import DateTimeProtocol
+from app.shared.Exceptions import AuthorizationException, UserNotFoundException
 from app.shared.UuidGenerator import UuidGeneratorProtocol
 
 
@@ -22,23 +23,38 @@ class RevokeSessionService(IRevokeSession):
         self.uuid_generator = uuid_generator
         self.datetime_converter = datetime_converter
 
-    async def execute(self, session_id: UUID) -> None:
+    async def execute(self, session_id: UUID, authenticated_user_id: UUID | None = None) -> None:
         session = await self.session_repository.find_by_id(session_id)
+
+        if not session:
+            raise UserNotFoundException(
+                message="Session not found",
+                details={"session_id": str(session_id)}
+            )
+
+        if authenticated_user_id is not None and session.user_id != authenticated_user_id:
+            raise AuthorizationException(
+                message="Cannot revoke session that does not belong to you",
+                details={
+                    "session_id": str(session_id),
+                    "session_owner": str(session.user_id),
+                    "authenticated_user": str(authenticated_user_id)
+                }
+            )
 
         await self.session_repository.revoke(session_id)
 
-        if session:
-            await self.transaction_logger.log_user_behavior(
-                UserBehaviorLog(
-                    id=self.uuid_generator.generate(),
-                    user_id=session.user_id,
-                    action=UserBehaviorAction.LOGOUT,
-                    ip_address=session.ip_address,
-                    user_agent=session.device_info,
-                    additional_metadata={"session_id": str(session_id)},
-                    created_at=self.datetime_converter.now_utc()
-                )
+        await self.transaction_logger.log_user_behavior(
+            UserBehaviorLog(
+                id=self.uuid_generator.generate(),
+                user_id=session.user_id,
+                action=UserBehaviorAction.LOGOUT,
+                ip_address=session.ip_address,
+                user_agent=session.device_info,
+                additional_metadata={"session_id": str(session_id)},
+                created_at=self.datetime_converter.now_utc()
             )
+        )
 
     async def execute_all_by_user(self, user_id: UUID) -> None:
         await self.session_repository.revoke_all_by_user(user_id)

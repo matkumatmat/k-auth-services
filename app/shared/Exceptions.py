@@ -70,4 +70,9 @@ class DatabaseException(BaseApplicationException):
         super().__init__(message=message, status_code=HTTPStatus.INTERNAL_SERVER_ERROR, details=details)
 
 
+class TooManyRequestsException(BaseApplicationException):
+    def __init__(self, message: str = "Too many requests", details: dict[str, Any] | None = None):
+        super().__init__(message=message, status_code=HTTPStatus.TOO_MANY_REQUESTS, details=details)
+
+
 DomainException = BaseApplicationException

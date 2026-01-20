@@ -4,15 +4,14 @@ import concurrent.futures
 import time
 
 # GANTI KE ENDPOINT CONSUME
-URL = "http://127.0.0.1:8000/api/v1/validate/quota/consume" 
+# URL = "http://127.0.0.1:8000/api/v1/validate/quota/consume" 
 TOTAL_REQUESTS = 20 
 CONCURRENT_THREADS = 20
 
+url = "http://localhost:8000/api/v1/otp/resend/email"
+
 payload = json.dumps({
-  "user_id": "c362b808-5e3f-433d-8e4e-d4237aec47ca",
-  "service_name": "cvmaker",
-  "quota_type": "api_calls_per_day",
-  "amount": 1
+  "user_id": "02a9ad54-30a8-40b2-88d6-208e6978d3b4"
 })
 headers = {
   'accept': 'application/json',
@@ -22,7 +21,7 @@ headers = {
 def send_request(request_id):
     try:
         start_time = time.time()
-        response = requests.post(URL, headers=headers, data=payload, timeout=5)
+        response = requests.post(url, headers=headers, data=payload, timeout=5)
         elapsed = time.time() - start_time
         
         # Cek status code
@@ -41,7 +40,7 @@ def send_request(request_id):
         return "failed"
 
 def run_ddos():
-    print(f"Memulai Load Test ke {URL}")
+    print(f"Memulai Load Test ke {url}")
     print(f"Total Request: {TOTAL_REQUESTS} | Thread: {CONCURRENT_THREADS}\n")
     
     results = []

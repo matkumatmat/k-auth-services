@@ -38,6 +38,9 @@ class RedisClient:
             await self._client.expire(key, ex)
         return value
 
+    async def ttl(self, key: str) -> int:
+        return await self._client.ttl(key)
+
     async def close(self):
         await self._client.aclose()
         await self._pool.aclose()

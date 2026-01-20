@@ -46,6 +46,7 @@ class AuthConfig:
 class EnvConfig:
     environment: str
     debug: bool
+    debug_otp: bool
     database: DatabaseConfig
     redis: RedisConfig
     auth: AuthConfig
@@ -63,6 +64,7 @@ class EnvConfig:
         return cls(
             environment=os.getenv("ENVIRONMENT", "development"),
             debug=os.getenv("DEBUG", "False").lower() == "true",
+            debug_otp=os.getenv("DEBUG_OTP", "False").lower() == "true",
             database=DatabaseConfig(
                 host=os.getenv("DB_HOST", "localhost"),
                 port=int(os.getenv("DB_PORT", "5432")),

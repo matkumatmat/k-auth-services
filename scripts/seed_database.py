@@ -125,10 +125,53 @@ async def seed_services():
         print(f"Seeded {len(services)} services successfully!")
 
 
+async def seed_plan_services():
+    async with db_factory.get_session() as session:
+        existing_plan_services = await session.execute(select(models.PlanServiceModel))
+        if existing_plan_services.scalars().first():
+            print("Plan-Services already seeded. Skipping...")
+            return
+
+        plans_result = await session.execute(select(models.PlanModel))
+        plans = {plan.name: plan for plan in plans_result.scalars().all()}
+
+        services_result = await session.execute(select(models.ServiceModel))
+        services = {service.name: service for service in services_result.scalars().all()}
+
+        plan_service_mappings = [
+            ("Free", ["cvmaker", "jobportal"]),
+            ("Pro", ["cvmaker", "jobportal", "3dbinpacking", "media_information"]),
+            ("Enterprise", ["cvmaker", "jobportal", "3dbinpacking", "media_information"]),
+        ]
+
+        plan_services_created = []
+        for plan_name, service_names in plan_service_mappings:
+            if plan_name not in plans:
+                continue
+
+            plan = plans[plan_name]
+            for service_name in service_names:
+                if service_name not in services:
+                    continue
+
+                service = services[service_name]
+                plan_service = models.PlanServiceModel(
+                    id=uuid4(),
+                    plan_id=plan.id,
+                    service_id=service.id,
+                    created_at=datetime.now(timezone.utc)
+                )
+                session.add(plan_service)
+                plan_services_created.append(plan_service)
+
+        print(f"Seeded {len(plan_services_created)} plan-service associations successfully!")
+
+
 async def main():
     print("Starting database seeding...")
     await seed_plans()
     await seed_services()
+    await seed_plan_services()
     await db_factory.close()
     print("Database seeding completed successfully!")
 

@@ -48,38 +48,52 @@ class RefreshTokenService(IRefreshToken):
         if not user_id_str:
             raise TokenInvalidException(message="Token payload missing user_id")
 
+        session_id_str = payload.get("session_id")
+        if not session_id_str:
+            raise TokenInvalidException(message="Token payload missing session_id")
+
         try:
             user_id = UUID(user_id_str)
+            session_id = UUID(session_id_str)
         except (ValueError, TypeError):
-            raise TokenInvalidException(message="Invalid user_id format in token")
+            raise TokenInvalidException(message="Invalid user_id or session_id format in token")
 
-        sessions = await self.session_repository.find_active_by_user(user_id)
-
-        if not sessions:
-            raise AuthenticationException(message="No active session found for user")
-
-        current_time = self.datetime_converter.now_utc()
-        matching_session = None
-
-        for session in sessions:
-            if session.is_active(current_time):
-                is_valid = self.salter.verify_password(refresh_token, session.refresh_token_hash)
-                if is_valid:
-                    matching_session = session
-                    break
+        matching_session = await self.session_repository.find_by_id(session_id)
 
         if not matching_session:
-            raise AuthenticationException(message="Invalid or expired refresh token")
+            raise AuthenticationException(message="Session not found")
+
+        if matching_session.user_id != user_id:
+            raise AuthenticationException(message="Session does not belong to user")
+
+        current_time = self.datetime_converter.now_utc()
+
+        if not matching_session.is_active(current_time):
+            raise AuthenticationException(message="Session is expired or revoked")
+
+        is_valid = self.salter.verify_password(refresh_token, matching_session.refresh_token_hash)
+        if not is_valid:
+            raise AuthenticationException(message="Invalid refresh token")
 
         await self.session_repository.revoke(matching_session.id)
 
-        access_token_payload = {"user_id": str(user_id), "type": "access"}
+        new_session_id = self.uuid_generator.generate()
+
+        access_token_payload = {
+            "user_id": str(user_id),
+            "session_id": str(new_session_id),
+            "type": "access"
+        }
         access_token = self.token_generator.generate(
             access_token_payload,
             expires_delta=timedelta(hours=1)
         )
 
-        new_refresh_token_payload = {"user_id": str(user_id), "type": "refresh"}
+        new_refresh_token_payload = {
+            "user_id": str(user_id),
+            "session_id": str(new_session_id),
+            "type": "refresh"
+        }
         new_refresh_token = self.token_generator.generate(
             new_refresh_token_payload,
             expires_delta=timedelta(days=7)
@@ -87,7 +101,7 @@ class RefreshTokenService(IRefreshToken):
         new_refresh_token_hash = self.salter.hash_password(new_refresh_token)
 
         new_session = Session(
-            id=self.uuid_generator.generate(),
+            id=new_session_id,
             user_id=user_id,
             refresh_token_hash=new_refresh_token_hash,
             device_info=matching_session.device_info,

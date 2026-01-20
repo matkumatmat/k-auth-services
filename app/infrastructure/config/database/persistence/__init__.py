@@ -7,6 +7,7 @@ from app.infrastructure.config.database.persistence.OtpCodeModel import OtpCodeM
 from app.infrastructure.config.database.persistence.PermissionModel import PermissionModel
 from app.infrastructure.config.database.persistence.PlanModel import PlanModel
 from app.infrastructure.config.database.persistence.PlanPermissionModel import PlanPermissionModel
+from app.infrastructure.config.database.persistence.PlanServiceModel import PlanServiceModel
 from app.infrastructure.config.database.persistence.QuotaModel import QuotaModel
 from app.infrastructure.config.database.persistence.ServiceAccessModel import ServiceAccessModel
 from app.infrastructure.config.database.persistence.ServiceModel import ServiceModel
@@ -25,6 +26,7 @@ __all__ = [
     "PermissionModel",
     "PlanModel",
     "PlanPermissionModel",
+    "PlanServiceModel",
     "QuotaModel",
     "ServiceAccessModel",
     "ServiceModel",

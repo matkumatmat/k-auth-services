@@ -11,7 +11,7 @@ class IQuotaRepository(ABC):
         pass
 
     @abstractmethod
-    async def update_usage(self, quota_id: UUID, amount: int) -> Quota:
+    async def update_usage(self, quota_id: UUID, amount: int) -> bool:
         pass
 
     @abstractmethod
