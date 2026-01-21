@@ -1,4 +1,4 @@
-from app.domain.PlanService import PlanService
+from app.domain.service.PlanService import PlanService
 from app.infrastructure.config.database.persistence.PlanServiceModel import PlanServiceModel
 
 

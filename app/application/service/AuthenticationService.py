@@ -8,8 +8,8 @@ from app.application.port.output.IOtpCodeRepository import IOtpCodeRepository
 from app.application.port.output.ISessionRepository import ISessionRepository
 from app.application.port.output.ITransactionLogger import ITransactionLogger
 from app.application.port.output.IUserRepository import IUserRepository
-from app.domain.Session import Session
-from app.domain.UserBehaviorLog import UserBehaviorLog
+from app.domain.authorization.Session import Session
+from app.domain.log.UserBehaviorLog import UserBehaviorLog
 from app.domain.ValueObjects import OtpPurpose, UserBehaviorAction
 from app.shared.Cryptography import Salter
 from app.shared.DateTime import DateTimeProtocol
@@ -20,6 +20,7 @@ from app.domain.exceptions import (
     InvalidCredentialsException,
     UserNotFoundException,
 )
+from app.shared.Logger import ILogger
 
 
 class AuthenticationService(IAuthenticateUser):
@@ -34,6 +35,7 @@ class AuthenticationService(IAuthenticateUser):
         token_generator: ITokenGenerator,
         uuid_generator: UuidGeneratorProtocol,
         datetime_converter: DateTimeProtocol,
+        logger: ILogger,
     ):
         self.user_repository = user_repository
         self.auth_provider_repository = auth_provider_repository
@@ -44,6 +46,8 @@ class AuthenticationService(IAuthenticateUser):
         self.token_generator = token_generator
         self.uuid_generator = uuid_generator
         self.datetime_converter = datetime_converter
+        self.logger = logger
+
 
     async def execute_with_email(self, email: str, password: str, device_info: str, ip_address: str) -> AuthenticationResult:
         current_time = self.datetime_converter.now_utc()

@@ -5,7 +5,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.port.output.IServiceAccessRepository import IServiceAccessRepository
-from app.domain.ServiceAccess import ServiceAccess
+from app.domain.authorization.ServiceAccess import ServiceAccess
 from app.infrastructure.adapter.output.database.mappers.ServiceAccessMapper import ServiceAccessMapper
 from app.infrastructure.config.database.persistence.ServiceAccessModel import ServiceAccessModel
 

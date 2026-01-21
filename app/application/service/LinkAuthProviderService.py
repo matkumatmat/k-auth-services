@@ -7,8 +7,8 @@ from app.application.port.input.ILinkAuthProvider import ILinkAuthProvider
 from app.application.port.output.IAuthProviderRepository import IAuthProviderRepository
 from app.application.port.output.IOtpCodeRepository import IOtpCodeRepository
 from app.application.port.output.IUserRepository import IUserRepository
-from app.domain.AuthProvider import AuthProvider
-from app.domain.OtpCode import OtpCode
+from app.domain.authorization.AuthProvider import AuthProvider
+from app.domain.authentication.OtpCode import OtpCode
 from app.domain.ValueObjects import AuthProviderType, OtpDeliveryMethod, OtpPurpose
 from app.infrastructure.config.EnvConfig import EnvConfig
 from app.shared.Cryptography import Salter

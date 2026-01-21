@@ -8,8 +8,8 @@ from app.application.port.output.IPlanRepository import IPlanRepository
 from app.application.port.output.IQuotaRepository import IQuotaRepository
 from app.application.port.output.ITransactionLogger import ITransactionLogger
 from app.application.port.output.IUserPlanRepository import IUserPlanRepository
-from app.domain.DatabaseTransactionLog import DatabaseTransactionLog
-from app.domain.Quota import Quota
+from app.domain.log.DatabaseTransactionLog import DatabaseTransactionLog
+from app.domain.service.Quota import Quota
 from app.domain.ValueObjects import DatabaseOperation
 from app.shared.DateTime import DateTimeProtocol
 from app.shared.UuidGenerator import UuidGeneratorProtocol

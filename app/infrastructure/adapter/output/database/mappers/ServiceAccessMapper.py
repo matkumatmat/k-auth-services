@@ -1,4 +1,4 @@
-from app.domain.ServiceAccess import ServiceAccess
+from app.domain.authorization.ServiceAccess import ServiceAccess
 from app.infrastructure.config.database.persistence.ServiceAccessModel import ServiceAccessModel
 
 

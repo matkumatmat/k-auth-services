@@ -19,6 +19,7 @@ router = APIRouter(prefix="/user", tags=["User"])
 
 
 class VerifyOtpRequest(BaseModel):
+    user_id: UUID
     otp_code: str
 
 
@@ -31,10 +32,11 @@ class ServiceInfo(BaseModel):
 async def verify_otp(
     request: VerifyOtpRequest,
     service: UserRegistrationService = Depends(get_user_registration_service),
-    current_user = Depends(get_current_user)
+    # current_user = Depends(get_current_user)
 ):
     try:
-        result = await service.verify(current_user.user_id, request.otp_code)
+        # result = await service.verify(current_user.user_id, request.otp_code)
+        result = await service.verify(request.user_id, request.otp_code)
         return {"verified": result, "message": "Account verified successfully"}
     except (UserNotFoundException, InvalidOtpCodeException) as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)

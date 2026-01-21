@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 
-from app.domain.DatabaseTransactionLog import DatabaseTransactionLog
-from app.domain.ExternalTransactionLog import ExternalTransactionLog
-from app.domain.UserBehaviorLog import UserBehaviorLog
+from app.domain.log.DatabaseTransactionLog import DatabaseTransactionLog
+from app.domain.log.ExternalTransactionLog import ExternalTransactionLog
+from app.domain.log.UserBehaviorLog import UserBehaviorLog
 
 
 class ITransactionLogger(ABC):

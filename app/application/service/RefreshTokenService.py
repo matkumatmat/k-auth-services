@@ -5,15 +5,15 @@ from app.application.dto.AuthenticationDTO import AuthenticationResult
 from app.application.port.input.IRefreshToken import IRefreshToken
 from app.application.port.output.ISessionRepository import ISessionRepository
 from app.application.port.output.ITransactionLogger import ITransactionLogger
-from app.domain.Session import Session
-from app.domain.UserBehaviorLog import UserBehaviorLog
+from app.domain.authorization.Session import Session
+from app.domain.log.UserBehaviorLog import UserBehaviorLog
 from app.domain.ValueObjects import UserBehaviorAction
 from app.shared.Cryptography import Salter
 from app.shared.DateTime import DateTimeProtocol
 from app.shared.TokenGenerator import ITokenGenerator
 from app.shared.UuidGenerator import UuidGeneratorProtocol
 from app.domain.exceptions import (
-    SessionExpiredException,
+    # SessionExpiredException,
     SessionInactiveException,
     SessionNotFoundException,
     TokenExpiredException,
@@ -129,8 +129,8 @@ class RefreshTokenService(IRefreshToken):
                 action=UserBehaviorAction.TOKEN_REFRESH,
                 ip_address=matching_session.ip_address,
                 user_agent=matching_session.device_info,
-                metadata={"old_session_id": str(matching_session.id), "new_session_id": str(new_session.id)},
-                timestamp=current_time
+                additional_metadata={"old_session_id": str(matching_session.id), "new_session_id": str(new_session.id)},
+                created_at=current_time
             )
         )
 

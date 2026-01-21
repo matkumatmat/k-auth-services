@@ -1,4 +1,4 @@
-from app.domain.Quota import Quota
+from app.domain.service.Quota import Quota
 from app.infrastructure.config.database.persistence.QuotaModel import QuotaModel
 
 

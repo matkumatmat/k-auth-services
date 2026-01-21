@@ -1,4 +1,4 @@
-from app.domain.ApiKey import ApiKey
+from app.domain.authorization.ApiKey import ApiKey
 from app.infrastructure.config.database.persistence.ApiKeyModel import ApiKeyModel
 
 

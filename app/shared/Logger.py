@@ -55,7 +55,7 @@ class StructLogger(ILogger):
                 structlog.processors.format_exc_info,
                 structlog.processors.JSONRenderer()
             ],
-            wrapper_class=structlog.make_filtering_bound_logger(logging_level=10),
+            wrapper_class=structlog.make_filtering_bound_logger(min_level=10),
             context_class=dict,
             logger_factory=structlog.PrintLoggerFactory(),
             cache_logger_on_first_use=True,

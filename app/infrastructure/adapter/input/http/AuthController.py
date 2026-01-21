@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
-
+from uuid import UUID
 from app.application.service.AuthenticationService import AuthenticationService
 from app.application.service.RefreshTokenService import RefreshTokenService
 from app.application.service.RevokeSessionService import RevokeSessionService
@@ -31,6 +31,7 @@ class RegisterRequest(BaseModel):
 
 
 class VerifyOtpRequest(BaseModel):
+    user_id: UUID
     otp_code: str
 
 
@@ -84,10 +85,11 @@ async def register(
 async def verify_otp(
     request: VerifyOtpRequest,
     service: UserRegistrationService = Depends(get_user_registration_service),
-    current_user = Depends(get_current_user)
+    # current_user = Depends(get_current_user)
 ):
     try:
-        result = await service.verify(current_user.user_id, request.otp_code)
+        # result = await service.verify(current_user.user_id, request.otp_code)
+        result = await service.verify(request.user_id, request.otp_code)
         return {
             "verified": result,
             "message": "Account verified successfully"

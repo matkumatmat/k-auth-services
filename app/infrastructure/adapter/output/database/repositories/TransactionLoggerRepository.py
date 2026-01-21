@@ -1,9 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.port.output.ITransactionLogger import ITransactionLogger
-from app.domain.DatabaseTransactionLog import DatabaseTransactionLog
-from app.domain.ExternalTransactionLog import ExternalTransactionLog
-from app.domain.UserBehaviorLog import UserBehaviorLog
+from app.domain.log.DatabaseTransactionLog import DatabaseTransactionLog
+from app.domain.log.ExternalTransactionLog import ExternalTransactionLog
+from app.domain.log.UserBehaviorLog import UserBehaviorLog
 from app.infrastructure.config.database.persistence.DatabaseTransactionLogModel import DatabaseTransactionLogModel
 from app.infrastructure.config.database.persistence.ExternalTransactionLogModel import ExternalTransactionLogModel
 from app.infrastructure.config.database.persistence.UserBehaviorLogModel import UserBehaviorLogModel

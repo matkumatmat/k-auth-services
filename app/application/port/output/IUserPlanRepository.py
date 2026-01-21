@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from app.domain.UserPlan import UserPlan
+from app.domain.authentication.UserPlan import UserPlan
 
 
 class IUserPlanRepository(ABC):

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from app.domain.Service import Service
+from app.domain.service.Service import Service
 
 
 class IServiceRepository(ABC):

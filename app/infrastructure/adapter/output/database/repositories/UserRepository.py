@@ -6,7 +6,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.port.output.IUserRepository import IUserRepository
-from app.domain.User import User
+from app.domain.authentication.User import User
 from app.infrastructure.adapter.output.database.mappers.UserMapper import UserMapper
 from app.infrastructure.config.database.persistence.UserModel import UserModel
 

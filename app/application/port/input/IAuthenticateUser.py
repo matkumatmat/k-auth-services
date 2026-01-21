@@ -1,6 +1,9 @@
 from abc import ABC, abstractmethod
 
-from app.application.dto.AuthenticationDTO import AuthenticationRequest, AuthenticationResult
+from app.application.dto.AuthenticationDTO import (
+    # AuthenticationRequest,
+    AuthenticationResult
+    )
 
 
 class IAuthenticateUser(ABC):

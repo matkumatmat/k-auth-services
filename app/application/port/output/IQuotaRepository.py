@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from uuid import UUID
 
-from app.domain.Quota import Quota
+from app.domain.service.Quota import Quota
 
 
 class IQuotaRepository(ABC):

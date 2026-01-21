@@ -1,11 +1,10 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.port.output.IUserPlanRepository import IUserPlanRepository
-from app.domain.UserPlan import UserPlan
+from app.domain.authentication.UserPlan import UserPlan
 from app.infrastructure.adapter.output.database.mappers.UserPlanMapper import UserPlanMapper
 from app.infrastructure.config.database.persistence.UserPlanModel import UserPlanModel
 from app.domain.ValueObjects import UserPlanStatus

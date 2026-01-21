@@ -5,7 +5,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.port.output.IQuotaRepository import IQuotaRepository
-from app.domain.Quota import Quota
+from app.domain.service.Quota import Quota
 from app.infrastructure.adapter.output.database.mappers.QuotaMapper import QuotaMapper
 from app.infrastructure.config.database.persistence.QuotaModel import QuotaModel
 

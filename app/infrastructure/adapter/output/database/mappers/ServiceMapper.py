@@ -1,4 +1,4 @@
-from app.domain.Service import Service
+from app.domain.service.Service import Service
 from app.infrastructure.config.database.persistence.ServiceModel import ServiceModel
 
 

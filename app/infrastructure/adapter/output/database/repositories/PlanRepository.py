@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.port.output.IPlanRepository import IPlanRepository
-from app.domain.Plan import Plan
+from app.domain.service.Plan import Plan
 from app.infrastructure.adapter.output.database.mappers.PlanMapper import PlanMapper
 from app.infrastructure.config.database.persistence.PlanModel import PlanModel
 

@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.port.output.IAuthProviderRepository import IAuthProviderRepository
-from app.domain.AuthProvider import AuthProvider
+from app.domain.authorization.AuthProvider import AuthProvider
 from app.domain.ValueObjects import AuthProviderType
 from app.infrastructure.adapter.output.database.mappers.AuthProviderMapper import AuthProviderMapper
 from app.infrastructure.config.database.persistence.AuthProviderModel import AuthProviderModel

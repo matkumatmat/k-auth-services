@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from app.domain.AuthProvider import AuthProvider
+from app.domain.authorization.AuthProvider import AuthProvider
 from app.domain.ValueObjects import AuthProviderType
 
 

@@ -33,6 +33,7 @@ from app.shared.DateTime import DateTimeConverter
 from app.shared.OtpRateLimiter import OtpRateLimiter
 from app.shared.TokenGenerator import JwtTokenGenerator
 from app.shared.UuidGenerator import UuidGenerator
+from app.shared.Logger import StructLogger,ILogger
 
 config = EnvConfig.load()
 
@@ -48,6 +49,9 @@ token_generator = JwtTokenGenerator(
     algorithm=config.auth.jwt_algorithm
 )
 
+root_logger = StructLogger(logger_name="k-auth_service")
+async def get_logger() -> ILogger:
+    return root_logger
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     async with db_factory.get_session() as session:
@@ -95,6 +99,7 @@ async def get_quota_management_service(
 
 async def get_authentication_service(
     db_session: AsyncSession = Depends(get_db_session),
+    logger: ILogger = Depends(get_logger),
 ) -> AuthenticationService:
     return AuthenticationService(
         user_repository=UserRepository(db_session),
@@ -105,7 +110,8 @@ async def get_authentication_service(
         salter=salter,
         token_generator=token_generator,
         uuid_generator=uuid_generator,
-        datetime_converter=datetime_converter
+        datetime_converter=datetime_converter,
+        logger=logger,
     )
 
 
@@ -125,7 +131,8 @@ async def get_user_registration_service(
         salter=salter,
         uuid_generator=uuid_generator,
         datetime_converter=datetime_converter,
-        config=config
+        config=config,
+        logger=root_logger,
     )
 
 

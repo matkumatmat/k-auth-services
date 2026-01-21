@@ -1,4 +1,4 @@
-from app.domain.AuthProvider import AuthProvider
+from app.domain.authorization.AuthProvider import AuthProvider
 from app.domain.ValueObjects import AuthProviderType
 from app.infrastructure.config.database.persistence.AuthProviderModel import AuthProviderModel
 

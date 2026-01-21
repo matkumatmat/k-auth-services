@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from app.domain.ApiKey import ApiKey
+from app.domain.authorization.ApiKey import ApiKey
 
 
 class IApiKeyRepository(ABC):

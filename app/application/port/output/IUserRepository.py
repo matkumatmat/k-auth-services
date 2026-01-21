@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from app.domain.User import User
+from app.domain.authentication.User import User
 
 
 class IUserRepository(ABC):

@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.port.output.IServiceRepository import IServiceRepository
-from app.domain.Service import Service
+from app.domain.service.Service import Service
 from app.infrastructure.adapter.output.database.mappers.ServiceMapper import ServiceMapper
 from app.infrastructure.config.database.persistence.ServiceModel import ServiceModel
 

@@ -3,7 +3,7 @@ from uuid import UUID
 from app.application.port.input.IRevokeSession import IRevokeSession
 from app.application.port.output.ISessionRepository import ISessionRepository
 from app.application.port.output.ITransactionLogger import ITransactionLogger
-from app.domain.UserBehaviorLog import UserBehaviorLog
+from app.domain.log.UserBehaviorLog import UserBehaviorLog
 from app.domain.ValueObjects import UserBehaviorAction
 from app.shared.DateTime import DateTimeProtocol
 from app.shared.UuidGenerator import UuidGeneratorProtocol

@@ -5,7 +5,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.port.output.IApiKeyRepository import IApiKeyRepository
-from app.domain.ApiKey import ApiKey
+from app.domain.authorization.ApiKey import ApiKey
 from app.infrastructure.adapter.output.database.mappers.ApiKeyMapper import ApiKeyMapper
 from app.infrastructure.config.database.persistence.ApiKeyModel import ApiKeyModel
 

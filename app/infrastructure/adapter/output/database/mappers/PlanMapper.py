@@ -1,4 +1,4 @@
-from app.domain.Plan import Plan
+from app.domain.service.Plan import Plan
 from app.domain.ValueObjects import BillingCycle
 from app.infrastructure.config.database.persistence.PlanModel import PlanModel
 

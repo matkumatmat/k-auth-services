@@ -1,12 +1,10 @@
-from datetime import datetime
 from uuid import UUID
 
-from anyio import current_time
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.port.output.IOtpCodeRepository import IOtpCodeRepository
-from app.domain.OtpCode import OtpCode
+from app.domain.authentication.OtpCode import OtpCode
 from app.domain.ValueObjects import OtpPurpose
 from app.infrastructure.adapter.output.database.mappers.OtpCodeMapper import OtpCodeMapper
 from app.infrastructure.config.database.persistence.OtpCodeModel import OtpCodeModel

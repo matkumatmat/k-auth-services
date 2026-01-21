@@ -1,4 +1,4 @@
-from app.domain.Session import Session
+from app.domain.authorization.Session import Session
 from app.infrastructure.config.database.persistence.SessionModel import SessionModel
 
 

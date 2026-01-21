@@ -6,7 +6,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.port.output.ISessionRepository import ISessionRepository
-from app.domain.Session import Session
+from app.domain.authorization.Session import Session
 from app.infrastructure.adapter.output.database.mappers.SessionMapper import SessionMapper
 from app.infrastructure.config.database.persistence.SessionModel import SessionModel
 

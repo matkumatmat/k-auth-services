@@ -1,4 +1,4 @@
-from app.domain.UserPlan import UserPlan
+from app.domain.authentication.UserPlan import UserPlan
 from app.domain.ValueObjects import UserPlanStatus
 from app.infrastructure.config.database.persistence.UserPlanModel import UserPlanModel
 

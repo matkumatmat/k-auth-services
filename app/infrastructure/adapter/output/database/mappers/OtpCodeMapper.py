@@ -1,4 +1,4 @@
-from app.domain.OtpCode import OtpCode
+from app.domain.authentication.OtpCode import OtpCode
 from app.domain.ValueObjects import OtpPurpose, OtpDeliveryMethod
 from app.infrastructure.config.database.persistence.OtpCodeModel import OtpCodeModel
 

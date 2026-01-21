@@ -4,7 +4,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.port.output.IPlanServiceRepository import IPlanServiceRepository
-from app.domain.PlanService import PlanService
+from app.domain.service.PlanService import PlanService
 from app.infrastructure.adapter.output.database.mappers.PlanServiceMapper import PlanServiceMapper
 from app.infrastructure.config.database.persistence.PlanServiceModel import PlanServiceModel
 

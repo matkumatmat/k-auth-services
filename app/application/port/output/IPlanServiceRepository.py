@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from app.domain.PlanService import PlanService
+from app.domain.service.PlanService import PlanService
 
 
 class IPlanServiceRepository(ABC):

@@ -13,12 +13,12 @@ from app.application.port.output.IServiceRepository import IServiceRepository
 from app.application.port.output.ITransactionLogger import ITransactionLogger
 from app.application.port.output.IUserPlanRepository import IUserPlanRepository
 from app.application.port.output.IUserRepository import IUserRepository
-from app.domain.AuthProvider import AuthProvider
-from app.domain.DatabaseTransactionLog import DatabaseTransactionLog
-from app.domain.OtpCode import OtpCode
-from app.domain.ServiceAccess import ServiceAccess
-from app.domain.User import User
-from app.domain.UserPlan import UserPlan
+from app.domain.authorization.AuthProvider import AuthProvider
+from app.domain.log.DatabaseTransactionLog import DatabaseTransactionLog
+from app.domain.authentication.OtpCode import OtpCode
+from app.domain.authorization.ServiceAccess import ServiceAccess
+from app.domain.authentication.User import User
+from app.domain.authentication.UserPlan import UserPlan
 from app.domain.ValueObjects import (
     AuthProviderType,
     DatabaseOperation,
@@ -38,7 +38,7 @@ from app.domain.exceptions import (
     UserNotFoundException,
 )
 from app.shared.UuidGenerator import UuidGeneratorProtocol
-
+from app.shared.Logger import ILogger
 
 class UserRegistrationService(IRegisterUser):
     def __init__(
@@ -56,6 +56,7 @@ class UserRegistrationService(IRegisterUser):
         uuid_generator: UuidGeneratorProtocol,
         datetime_converter: DateTimeProtocol,
         config: EnvConfig,
+        logger: ILogger | None = None,
     ):
         self.user_repository = user_repository
         self.auth_provider_repository = auth_provider_repository
@@ -70,11 +71,13 @@ class UserRegistrationService(IRegisterUser):
         self.uuid_generator = uuid_generator
         self.datetime_converter = datetime_converter
         self.config = config
+        self.logger = logger
 
     async def execute(self, contact: str, password: str | None = None) -> User:
         contact_type = ContactTypeDetector.detect(contact)
 
         if contact_type is None:
+            self.logger.error("Invalid contact format during registration", contact=contact)
             raise InvalidContactFormatException(contact=contact)
 
         if contact_type == AuthProviderType.EMAIL:
@@ -264,7 +267,7 @@ class UserRegistrationService(IRegisterUser):
         )
 
         if self.config.debug_otp:
-            print(f"\n[DEBUG] OTP for {target}: {raw_otp_code}\n")
+            self.logger.debug("OTP code for", otp_code=raw_otp_code, target=target)
 
         otp_hash = self.salter.hash_password(raw_otp_code)
         otp_code = OtpCode(

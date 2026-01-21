@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from app.domain.Session import Session
+from app.domain.authorization.Session import Session
 
 
 class ISessionRepository(ABC):

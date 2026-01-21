@@ -1,4 +1,4 @@
-from app.domain.User import User
+from app.domain.authentication.User import User
 from app.infrastructure.config.database.persistence.UserModel import UserModel
 
 
