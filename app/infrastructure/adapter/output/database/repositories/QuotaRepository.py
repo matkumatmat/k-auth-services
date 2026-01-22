@@ -8,11 +8,13 @@ from app.application.port.output.IQuotaRepository import IQuotaRepository
 from app.domain.service.Quota import Quota
 from app.infrastructure.adapter.output.database.mappers.QuotaMapper import QuotaMapper
 from app.infrastructure.config.database.persistence.QuotaModel import QuotaModel
+from app.shared.DateTime import DateTimeProtocol
 
 
 class QuotaRepository(IQuotaRepository):
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, datetime_converter: DateTimeProtocol):
         self._session = session
+        self._datetime_converter = datetime_converter
 
     async def find_by_user_and_service(
         self, user_id: UUID, service_name: str, quota_type: str
@@ -27,7 +29,7 @@ class QuotaRepository(IQuotaRepository):
         return QuotaMapper.to_domain(model) if model else None
 
     async def update_usage(self, quota_id: UUID, amount: int) -> bool:
-        current_time = datetime.utcnow()
+        current_time = self._datetime_converter.now_utc()
 
         stmt = (
             update(QuotaModel)

@@ -33,9 +33,18 @@ from app.shared.DateTime import DateTimeConverter
 from app.shared.OtpRateLimiter import OtpRateLimiter
 from app.shared.TokenGenerator import JwtTokenGenerator
 from app.shared.UuidGenerator import UuidGenerator
-from app.shared.Logger import StructLogger,ILogger
+from app.shared.Logger import StructLogger, ILogger, configure_structlog
+from app.domain.authorization.TokenPolicy import TokenPolicy
+from app.domain.service.QuotaDefaults import QuotaDefaults
 
 config = EnvConfig.load()
+token_policy = TokenPolicy.from_config(
+    access_hours=config.auth.access_token_expiry_hours,
+    refresh_days=config.auth.refresh_token_expiry_days
+)
+quota_defaults = QuotaDefaults.default()
+
+configure_structlog(environment=config.environment, debug=config.debug)
 
 db_factory = DatabaseSessionFactory(config.database)
 redis_client = RedisClient(config.redis)
@@ -66,7 +75,7 @@ async def get_token_validation_service(
     db_session: AsyncSession = Depends(get_db_session),
 ) -> TokenValidationService:
     return TokenValidationService(
-        session_repository=SessionRepository(db_session),
+        session_repository=SessionRepository(db_session, datetime_converter),
         token_generator=token_generator,
         datetime_converter=datetime_converter
     )
@@ -76,8 +85,8 @@ async def get_service_access_validation_service(
     db_session: AsyncSession = Depends(get_db_session),
 ) -> ServiceAccessValidationService:
     return ServiceAccessValidationService(
-        service_access_repository=ServiceAccessRepository(db_session),
-        user_plan_repository=UserPlanRepository(db_session),
+        service_access_repository=ServiceAccessRepository(db_session, datetime_converter),
+        user_plan_repository=UserPlanRepository(db_session, datetime_converter),
         datetime_converter=datetime_converter
     )
 
@@ -87,13 +96,14 @@ async def get_quota_management_service(
     service_access_validator: ServiceAccessValidationService = Depends(get_service_access_validation_service),
 ) -> QuotaManagementService:
     return QuotaManagementService(
-        quota_repository=QuotaRepository(db_session),
-        user_plan_repository=UserPlanRepository(db_session),
+        quota_repository=QuotaRepository(db_session, datetime_converter),
+        user_plan_repository=UserPlanRepository(db_session, datetime_converter),
         plan_repository=PlanRepository(db_session),
         transaction_logger=TransactionLoggerRepository(db_session),
         datetime_converter=datetime_converter,
         uuid_generator=uuid_generator,
-        service_access_validator=service_access_validator
+        service_access_validator=service_access_validator,
+        quota_defaults=quota_defaults
     )
 
 
@@ -101,10 +111,15 @@ async def get_authentication_service(
     db_session: AsyncSession = Depends(get_db_session),
     logger: ILogger = Depends(get_logger),
 ) -> AuthenticationService:
+    rate_limiter = OtpRateLimiter(
+        redis_client=redis_client,
+        max_requests=3,
+        window_seconds=900
+    )
     return AuthenticationService(
-        user_repository=UserRepository(db_session),
+        user_repository=UserRepository(db_session, datetime_converter),
         auth_provider_repository=AuthProviderRepository(db_session),
-        session_repository=SessionRepository(db_session),
+        session_repository=SessionRepository(db_session, datetime_converter),
         otp_repository=OtpCodeRepository(db_session),
         transaction_logger=TransactionLoggerRepository(db_session),
         salter=salter,
@@ -112,6 +127,8 @@ async def get_authentication_service(
         uuid_generator=uuid_generator,
         datetime_converter=datetime_converter,
         logger=logger,
+        rate_limiter=rate_limiter,
+        token_policy=token_policy
     )
 
 
@@ -119,13 +136,13 @@ async def get_user_registration_service(
     db_session: AsyncSession = Depends(get_db_session),
 ) -> UserRegistrationService:
     return UserRegistrationService(
-        user_repository=UserRepository(db_session),
+        user_repository=UserRepository(db_session, datetime_converter),
         auth_provider_repository=AuthProviderRepository(db_session),
         otp_repository=OtpCodeRepository(db_session),
         plan_repository=PlanRepository(db_session),
-        user_plan_repository=UserPlanRepository(db_session),
+        user_plan_repository=UserPlanRepository(db_session, datetime_converter),
         service_repository=ServiceRepository(db_session),
-        service_access_repository=ServiceAccessRepository(db_session),
+        service_access_repository=ServiceAccessRepository(db_session, datetime_converter),
         plan_service_repository=PlanServiceRepository(db_session),
         transaction_logger=TransactionLoggerRepository(db_session),
         salter=salter,
@@ -140,12 +157,13 @@ async def get_refresh_token_service(
     db_session: AsyncSession = Depends(get_db_session),
 ) -> RefreshTokenService:
     return RefreshTokenService(
-        session_repository=SessionRepository(db_session),
+        session_repository=SessionRepository(db_session, datetime_converter),
         transaction_logger=TransactionLoggerRepository(db_session),
         salter=salter,
         token_generator=token_generator,
         uuid_generator=uuid_generator,
-        datetime_converter=datetime_converter
+        datetime_converter=datetime_converter,
+        token_policy=token_policy
     )
 
 
@@ -153,7 +171,7 @@ async def get_revoke_session_service(
     db_session: AsyncSession = Depends(get_db_session),
 ) -> RevokeSessionService:
     return RevokeSessionService(
-        session_repository=SessionRepository(db_session),
+        session_repository=SessionRepository(db_session, datetime_converter),
         transaction_logger=TransactionLoggerRepository(db_session),
         datetime_converter=datetime_converter,
         uuid_generator=uuid_generator
@@ -169,7 +187,7 @@ async def get_resend_otp_service(
         window_seconds=900
     )
     return ResendOtpService(
-        user_repository=UserRepository(db_session),
+        user_repository=UserRepository(db_session, datetime_converter),
         auth_provider_repository=AuthProviderRepository(db_session),
         otp_repository=OtpCodeRepository(db_session),
         salter=salter,
@@ -184,7 +202,7 @@ async def get_link_auth_provider_service(
     db_session: AsyncSession = Depends(get_db_session),
 ) -> LinkAuthProviderService:
     return LinkAuthProviderService(
-        user_repository=UserRepository(db_session),
+        user_repository=UserRepository(db_session, datetime_converter),
         auth_provider_repository=AuthProviderRepository(db_session),
         otp_repository=OtpCodeRepository(db_session),
         salter=salter,

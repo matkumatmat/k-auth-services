@@ -5,11 +5,8 @@ from app.infrastructure.config.EnvConfig import RedisConfig
 
 class RedisClient:
     def __init__(self, config: RedisConfig):
-        self._pool = aioredis.ConnectionPool(
-            host=config.host,
-            port=config.port,
-            db=config.db,
-            password=config.password,
+        self._pool = aioredis.ConnectionPool.from_url(
+            config.url,
             decode_responses=config.decode_responses,
             max_connections=config.max_connections
         )

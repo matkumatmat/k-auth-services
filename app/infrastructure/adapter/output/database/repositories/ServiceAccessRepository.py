@@ -1,4 +1,3 @@
-from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select, update
@@ -8,11 +7,13 @@ from app.application.port.output.IServiceAccessRepository import IServiceAccessR
 from app.domain.authorization.ServiceAccess import ServiceAccess
 from app.infrastructure.adapter.output.database.mappers.ServiceAccessMapper import ServiceAccessMapper
 from app.infrastructure.config.database.persistence.ServiceAccessModel import ServiceAccessModel
+from app.shared.DateTime import DateTimeProtocol
 
 
 class ServiceAccessRepository(IServiceAccessRepository):
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, datetime_converter: DateTimeProtocol):
         self._session = session
+        self._datetime_converter = datetime_converter
 
     async def find_by_user_and_service(
         self, user_id: UUID, service_name: str
@@ -42,13 +43,14 @@ class ServiceAccessRepository(IServiceAccessRepository):
         return ServiceAccessMapper.to_domain(access_model)
 
     async def revoke(self, access_id: UUID) -> None:
+        current_time = self._datetime_converter.now_utc()
         stmt = (
             update(ServiceAccessModel)
             .where(ServiceAccessModel.id == access_id)
             .values(
-                revoked_at=datetime.utcnow(),
+                revoked_at=current_time,
                 is_allowed=False,
-                updated_at=datetime.utcnow()
+                updated_at=current_time
             )
         )
         await self._session.execute(stmt)

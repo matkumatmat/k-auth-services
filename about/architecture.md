@@ -10,6 +10,7 @@ untuk saat ini ada 10 existing service yang di pegang perusahaan diantara bebera
 
 # Architecture
 # 1. base information
+python : python 3.13.11
 environtment manager : poetry
 linter : ruff linter
 sql database : postgresql
@@ -36,43 +37,25 @@ payment-gateaway : undefined (belum di tentukan)
 12. when must create documentation or plan, must created on md/ not on app/ 
 13. clean code without docstring on anything code.
 14. testing is run or maked when the codes was finals, not every create code must test, just test when instructed.
+14. strictly using pydantic for everything can be.
+15. always read pydantc documentation
 
 # 3. project structure
-.
-├── application/
-│   ├── port/
-│   │   ├── input/
-│   │   └── output/
-│   └── service/
-├── domain/
-├── env/
-│   ├── .env.development
-│   └── .env.production
-├── infrastructure/
-│   ├── adapter/
-│   │   ├── input/
-│   │   └── output/
-│   └── config/
-│       ├── database/
-│       │   ├── supabase/
-│       │   ├── persistence/
-│       │   └── redis/
-│       └── server/
-├── main.py
-├── shared/
-└── tests/
-    ├── e2e/
-    ├── integration/
-    └── unit/
+**READ THE /about/structure.md**
 
 # 4. DO and Donts
 # Do 
 1. always strict with company rules (point 2) 
 3. always ensure to check the shared/ modules, to check the custom of company modules instead create new code and hardcode anything
 2. use dict, list, | instead of deprecated code like Dict, List, Optional
+3. maximalize pydantic modules, if can implement the pydantic modules on documentation use it instead using native python methode.
+4. always to check availabilty of modules and logic on domain, or shared folders
 
 # Dont's
 1. never use deprecated code like using Dict, List, or Optional
+3. never use nested 'if', if can maximalize using pydantic, just use pydantic
+4. never to write bussiness logic besides on domain
+
 
 
 # 5. type of user plan

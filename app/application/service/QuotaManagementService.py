@@ -10,6 +10,7 @@ from app.application.port.output.ITransactionLogger import ITransactionLogger
 from app.application.port.output.IUserPlanRepository import IUserPlanRepository
 from app.domain.log.DatabaseTransactionLog import DatabaseTransactionLog
 from app.domain.service.Quota import Quota
+from app.domain.service.QuotaDefaults import QuotaDefaults
 from app.domain.ValueObjects import DatabaseOperation
 from app.shared.DateTime import DateTimeProtocol
 from app.shared.UuidGenerator import UuidGeneratorProtocol
@@ -29,6 +30,7 @@ class QuotaManagementService(ICheckQuota):
         datetime_converter: DateTimeProtocol,
         uuid_generator: UuidGeneratorProtocol,
         service_access_validator: IValidateServiceAccess,
+        quota_defaults: QuotaDefaults,
     ):
         self.quota_repository = quota_repository
         self.user_plan_repository = user_plan_repository
@@ -37,6 +39,7 @@ class QuotaManagementService(ICheckQuota):
         self.datetime_converter = datetime_converter
         self.uuid_generator = uuid_generator
         self.service_access_validator = service_access_validator
+        self.quota_defaults = quota_defaults
 
     async def execute(self, user_id: UUID, service_name: str, quota_type: str, amount: int) -> QuotaCheckResult:
         current_time = self.datetime_converter.now_utc()
@@ -124,15 +127,15 @@ class QuotaManagementService(ICheckQuota):
             plan = await self.plan_repository.find_by_id(user_plan.plan_id)
             if plan:
                 quota_limit = plan.get_quota_limit(quota_type)
-                default_limit = quota_limit if quota_limit is not None else 50
+                default_limit = self.quota_defaults.get_limit_for_plan(quota_limit)
             else:
-                default_limit = 50
+                default_limit = self.quota_defaults.fallback_limit
         else:
-            default_limit = 1
+            default_limit = self.quota_defaults.get_anonymous_limit()
 
         reset_at = self.datetime_converter.add_timedelta(
             current_time,
-            timedelta(days=1)
+            self.quota_defaults.get_reset_period()
         )
 
         quota = Quota(

@@ -1,18 +1,19 @@
-from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from sqlalchemy import select
 from app.application.port.output.IUserPlanRepository import IUserPlanRepository
 from app.domain.authentication.UserPlan import UserPlan
 from app.infrastructure.adapter.output.database.mappers.UserPlanMapper import UserPlanMapper
 from app.infrastructure.config.database.persistence.UserPlanModel import UserPlanModel
 from app.domain.ValueObjects import UserPlanStatus
+from app.shared.DateTime import DateTimeProtocol
 
 
 class UserPlanRepository(IUserPlanRepository):
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, datetime_converter: DateTimeProtocol):
         self._session = session
+        self._datetime_converter = datetime_converter
 
     async def find_by_id(self, user_plan_id: UUID) -> UserPlan | None:
         stmt = select(UserPlanModel).where(UserPlanModel.id == user_plan_id)
@@ -21,7 +22,7 @@ class UserPlanRepository(IUserPlanRepository):
         return UserPlanMapper.to_domain(model) if model else None
 
     async def find_active_by_user(self, user_id: UUID) -> UserPlan | None:
-        current_time = datetime.utcnow()
+        current_time = self._datetime_converter.now_utc()
         stmt = select(UserPlanModel).where(
             UserPlanModel.user_id == user_id,
             UserPlanModel.status == UserPlanStatus.ACTIVE,

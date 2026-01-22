@@ -1,6 +1,7 @@
 [
   {"type":"directory","name":".","contents":[
     {"type":"directory","name":"about","contents":[
+      {"type":"file","name":"architecture.md"},
       {"type":"file","name":"structure.json"},
       {"type":"file","name":"structure.md"}
     ]},
@@ -95,6 +96,7 @@
           {"type":"file","name":"Quota.py"},
           {"type":"file","name":"Service.py"}
         ]},
+        {"type":"file","name":"ServerConfig.py"},
         {"type":"file","name":"ValueObjects.py"}
       ]},
       {"type":"directory","name":"infrastructure","contents":[
@@ -107,7 +109,8 @@
               {"type":"file","name":"ValidationController.py"}
             ]},
             {"type":"directory","name":"middleware","contents":[
-              {"type":"file","name":"ExceptionHandler.py"}
+              {"type":"file","name":"ExceptionHandler.py"},
+              {"type":"file","name":"LoggingMiddleware.py"}
             ]}
           ]},
           {"type":"directory","name":"output","contents":[
@@ -196,9 +199,13 @@
         {"type":"directory","name":"e2e","contents":[
           {"type":"file","name":"ddos_test.py"}
         ]},
-        {"type":"directory","name":"integration"},
+        {"type":"directory","name":"integration","contents":[
+          {"type":"file","name":"__init__.py"},
+          {"type":"file","name":"test_env_config_loading.py"}
+        ]},
         {"type":"directory","name":"unit","contents":[
-          {"type":"file","name":"__init__.py"}
+          {"type":"file","name":"__init__.py"},
+          {"type":"file","name":"test_env_config.py"}
         ]},
         {"type":"file","name":"__init__.py"}
       ]},
@@ -213,17 +220,19 @@
     {"type":"directory","name":"scripts","contents":[
       {"type":"file","name":"gen_structures.sh"},
       {"type":"file","name":"init_db.py"},
-      {"type":"file","name":"seed_database.py"}
+      {"type":"file","name":"quickstart.sh"},
+      {"type":"file","name":"run_development_mode.sh"},
+      {"type":"file","name":"run_production_mode.sh"},
+      {"type":"file","name":"seed_database.py"},
+      {"type":"file","name":"start_server.sh"},
+      {"type":"file","name":"test_requests.sh"}
     ]},
     {"type":"file","name":"README.md"},
     {"type":"file","name":"alembic.ini"},
-    {"type":"file","name":"architecture.md"},
     {"type":"file","name":"docker-compose.yml"},
     {"type":"file","name":"poetry.lock"},
-    {"type":"file","name":"pyproject.toml"},
-    {"type":"file","name":"quickstart.sh"},
-    {"type":"file","name":"start_server.sh"}
+    {"type":"file","name":"pyproject.toml"}
   ]}
 ,
-  {"type":"report","directories":42,"files":144}
+  {"type":"report","directories":42,"files":152}
 ]

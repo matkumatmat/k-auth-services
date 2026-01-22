@@ -1,5 +1,3 @@
-
-from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select, update
@@ -9,13 +7,15 @@ from app.application.port.output.IUserRepository import IUserRepository
 from app.domain.authentication.User import User
 from app.infrastructure.adapter.output.database.mappers.UserMapper import UserMapper
 from app.infrastructure.config.database.persistence.UserModel import UserModel
+from app.shared.DateTime import DateTimeProtocol
 
 
 class UserRepository(IUserRepository):
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, datetime_converter: DateTimeProtocol):
         self._session = session
         self._mapper = UserMapper()
+        self._datetime_converter = datetime_converter
 
     async def find_by_id(self, user_id: UUID) -> User | None:
         stmt = select(UserModel).where(UserModel.id == user_id, UserModel.deleted_at.is_(None))
@@ -53,7 +53,7 @@ class UserRepository(IUserRepository):
         stmt = (
             update(UserModel)
             .where(UserModel.id == user_id)
-            .values(deleted_at=datetime.utcnow())
+            .values(deleted_at=self._datetime_converter.now_utc())
         )
         await self._session.execute(stmt)
         await self._session.flush()

@@ -1,5 +1,6 @@
 .
 ├── about
+│   ├── architecture.md
 │   ├── structure.json
 │   └── structure.md
 ├── alembic
@@ -80,6 +81,7 @@
 │   │   │   ├── PlanService.py
 │   │   │   ├── Quota.py
 │   │   │   └── Service.py
+│   │   ├── ServerConfig.py
 │   │   └── ValueObjects.py
 │   ├── infrastructure
 │   │   ├── adapter
@@ -90,7 +92,8 @@
 │   │   │   │   │   ├── UserController.py
 │   │   │   │   │   └── ValidationController.py
 │   │   │   │   └── middleware
-│   │   │   │       └── ExceptionHandler.py
+│   │   │   │       ├── ExceptionHandler.py
+│   │   │   │       └── LoggingMiddleware.py
 │   │   │   └── output
 │   │   │       ├── database
 │   │   │       │   ├── mappers
@@ -164,8 +167,11 @@
 │   │   ├── e2e
 │   │   │   └── ddos_test.py
 │   │   ├── integration
+│   │   │   ├── __init__.py
+│   │   │   └── test_env_config_loading.py
 │   │   ├── unit
-│   │   │   └── __init__.py
+│   │   │   ├── __init__.py
+│   │   │   └── test_env_config.py
 │   │   └── __init__.py
 │   └── main.py
 ├── docker
@@ -175,14 +181,16 @@
 ├── scripts
 │   ├── gen_structures.sh
 │   ├── init_db.py
-│   └── seed_database.py
+│   ├── quickstart.sh
+│   ├── run_development_mode.sh
+│   ├── run_production_mode.sh
+│   ├── seed_database.py
+│   ├── start_server.sh
+│   └── test_requests.sh
 ├── README.md
 ├── alembic.ini
-├── architecture.md
 ├── docker-compose.yml
 ├── poetry.lock
-├── pyproject.toml
-├── quickstart.sh
-└── start_server.sh
+└── pyproject.toml
 
-42 directories, 144 files
+42 directories, 152 files

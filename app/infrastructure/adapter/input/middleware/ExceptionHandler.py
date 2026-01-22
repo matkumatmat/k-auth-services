@@ -1,41 +1,51 @@
+import structlog
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 
 from app.domain.exceptions import DomainException
 from app.shared.Exceptions import DatabaseException
-from app.shared.Logger import StructLogger
+
 
 async def domain_exception_handler(request: Request, exc: DomainException) -> JSONResponse:
-    logger = StructLogger(logger_name="DomainExceptionHandler")
-    logger.error("Unhandled exception occurred", error=str(exc), exc_info=True)
+    logger = structlog.get_logger()
+    logger.warning(
+        "domain_exception_caught",
+        exception_type=type(exc).__name__,
+        status_code=exc.status_code,
+        message=exc.message,
+        method=request.method,
+        path=str(request.url.path)
+    )
     return JSONResponse(
         status_code=exc.status_code,
-        content={
-            "error": exc.message,
-            # "details": exc.details if hasattr(exc, "details") else None
-        }
+        content={"error": exc.message}
     )
 
 
 async def database_exception_handler(request: Request, exc: DatabaseException) -> JSONResponse:
-    logger = StructLogger(logger_name="DatabaseExceptionHandler")
-    logger.error("Unhandled exception occurred", error=str(exc), exc_info=True)
+    logger = structlog.get_logger()
+    logger.exception(
+        "database_exception_caught",
+        exception_type=type(exc).__name__,
+        message=exc.message,
+        method=request.method,
+        path=str(request.url.path)
+    )
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={
-            "error": exc.message,
-            # "details": exc.details if hasattr(exc, "details") else None
-        }
+        content={"error": exc.message}
     )
 
 
 async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    logger = StructLogger(logger_name="ExceptionHandler")
-    logger.error("Unhandled exception occurred", error=str(exc), exc_info=True)
+    logger = structlog.get_logger()
+    logger.exception(
+        "unhandled_exception_caught",
+        exception_type=type(exc).__name__,
+        method=request.method,
+        path=str(request.url.path)
+    )
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={
-            "error": "Internal server error",
-            # "details": str(exc)  --- OMITTED FOR SECURITY REASONS ---
-        }
+        content={"error": "Internal server error"}
     )

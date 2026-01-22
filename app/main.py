@@ -13,13 +13,15 @@ from app.infrastructure.adapter.input.middleware.ExceptionHandler import (
     domain_exception_handler,
     generic_exception_handler
 )
+from app.infrastructure.adapter.input.middleware.LoggingMiddleware import LoggingMiddleware
 from app.infrastructure.config.EnvConfig import EnvConfig
 from app.infrastructure.dependencies import db_factory, redis_client
 from app.domain.exceptions import DomainException
+from app.domain.ServerConfig import ServerConfig
 from app.shared.Exceptions import DatabaseException
 
 config = EnvConfig.load()
-
+env = ServerConfig(environtment=config.environment).is_production()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -33,9 +35,9 @@ app = FastAPI(
     version="1.0.0",
     description="Scalable authentication service for multi-microservices architecture",
     debug=config.debug,
-    docs_url="/docs" if config.debug else None,
-    redoc_url="/redoc" if config.debug else None,
-    openapi_url="/openapi.json" if config.debug else None,
+    docs_url="/docs" if env is False else None,
+    redoc_url="/redoc" if env is False else None,
+    openapi_url="/openapi.json" if env is False else None,
     lifespan=lifespan
 )
 
@@ -46,6 +48,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(LoggingMiddleware)
 
 app.add_exception_handler(DomainException, domain_exception_handler)
 app.add_exception_handler(DatabaseException, database_exception_handler)
@@ -59,20 +63,24 @@ app.include_router(otp_router, prefix="/api/v1")
 
 @app.get("/health")
 async def health_check():
+    if env:
+        return {"status": "healthy"}
+
     return {
         "status": "healthy",
-        "environment": config.environment,
+        "environment": env,
         "debug": config.debug
     }
 
 
-@app.get("/")
-async def root():
-    return {
-        "message": "Auth Service API",
-        "version": "1.0.0",
-        "docs": "/docs" if config.debug else "disabled in production"
-    }
+if env is False:
+    @app.get("/")
+    async def root():
+        return {
+            "message": "Auth Service API",
+            "version": "1.0.0",
+            "docs": "/docs"
+        }
 
 
 if __name__ == "__main__":

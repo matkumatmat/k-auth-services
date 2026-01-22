@@ -1,5 +1,3 @@
-
-from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select, update
@@ -9,13 +7,15 @@ from app.application.port.output.ISessionRepository import ISessionRepository
 from app.domain.authorization.Session import Session
 from app.infrastructure.adapter.output.database.mappers.SessionMapper import SessionMapper
 from app.infrastructure.config.database.persistence.SessionModel import SessionModel
+from app.shared.DateTime import DateTimeProtocol
 
 
 class SessionRepository(ISessionRepository):
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, datetime_converter: DateTimeProtocol):
         self._session = session
         self._mapper = SessionMapper()
+        self._datetime_converter = datetime_converter
 
     async def find_by_id(self, session_id: UUID) -> Session | None:
         stmt = select(SessionModel).where(SessionModel.id == session_id)
@@ -24,7 +24,7 @@ class SessionRepository(ISessionRepository):
         return self._mapper.to_domain(model) if model else None
 
     async def find_active_by_user(self, user_id: UUID) -> list[Session]:
-        current_time = datetime.utcnow()
+        current_time = self._datetime_converter.now_utc()
         stmt = select(SessionModel).where(
             SessionModel.user_id == user_id,
             SessionModel.revoked_at.is_(None),
@@ -45,7 +45,7 @@ class SessionRepository(ISessionRepository):
         stmt = (
             update(SessionModel)
             .where(SessionModel.id == session_id)
-            .values(revoked_at=datetime.utcnow())
+            .values(revoked_at=self._datetime_converter.now_utc())
         )
         await self._session.execute(stmt)
         await self._session.flush()
@@ -54,7 +54,7 @@ class SessionRepository(ISessionRepository):
         stmt = (
             update(SessionModel)
             .where(SessionModel.user_id == user_id)
-            .values(revoked_at=datetime.utcnow())
+            .values(revoked_at=self._datetime_converter.now_utc())
         )
         await self._session.execute(stmt)
         await self._session.flush()
